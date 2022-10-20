@@ -16,10 +16,7 @@
 
 'EEG' (30842,1,258) (# of trials, each trials contains phase and amplitude information); 'labels' (30842,2) (first column refers to IDs, second column refers to labels)
 
-## Data processing
-- 'min': the detection and interpolation of bad electrodes, and filtering the data with 40 Hz high- pass filter and 0.5 Hz low-pass filter; remove artifacts using ICA (ocular artifacts)
-- 'max': same process as min processing but removes a much larger number of artifacts (muscles, heart, eyes, line noise, channel noise)
-- 'hilbert': applied after band-passing the signal, resulting in a complex time series from which we extract phase and amplitude
+
 
 ## Input/Output
 train:validation:test = 0.7:0.15:0.15 (split based on IDs, same ID goes to the same group)
@@ -30,18 +27,31 @@ performance metrics: accuracy_score
 
 ## Files
 - "Position_task_with_dots_synchronised_min.npz"
+
 'EEG' (21464, 500, 129) (# of trials, # of time samples, # of channels); 
 'labels' (21464, 3) (first column refers to IDs, second column refers to labels)
 
 - "Position_task_with_dots_synchronised_min_hilbert.npz"
+
 'EEG' (21464, 1, 258) (# of trials, # of time samples, # of channels); 
 'labels' (21464, 3) (first column refers to IDs, second column refers to labels)
 
 
 - "Position_task_with_dots_synchronised_max.npz"
+
 'EEG' (21659, 500, 129) (# of trials, # of time samples, # of channels); 
 'labels' (21464, 3) (first column refers to IDs, second column refers to labels)
 
 - "Position_task_with_dots_synchronised_max_hilbert.npz"
+
 'EEG' (21659, 1, 258) (# of trials, # of time samples, # of channels); 
 'labels' (21659, 3) (first column refers to IDs, second column refers to labels)
+
+## Input/Output
+train: validation:test = 
+Input: minimally reprocessed hilbert data; 
+Output: abs position
+Model Type : Regression
+
+
+
