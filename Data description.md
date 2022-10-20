@@ -25,3 +25,23 @@
 train:validation:test = 0.7:0.15:0.15 (split based on IDs, same ID goes to the same group)
 Input: minimally reprocessed hilbert data; Output: Left/Right
 performance metrics: accuracy_score
+
+# Position task with dots
+
+## Files
+- "Position_task_with_dots_synchronised_min.npz"
+'EEG' (21464, 500, 129) (# of trials, # of time samples, # of channels); 
+'labels' (21464, 3) (first column refers to IDs, second column refers to labels)
+
+- "Position_task_with_dots_synchronised_min_hilbert.npz"
+'EEG' (21464, 1, 258) (# of trials, # of time samples, # of channels); 
+'labels' (21464, 3) (first column refers to IDs, second column refers to labels)
+
+
+- "Position_task_with_dots_synchronised_max.npz"
+'EEG' (21659, 500, 129) (# of trials, # of time samples, # of channels); 
+'labels' (21464, 3) (first column refers to IDs, second column refers to labels)
+
+- "Position_task_with_dots_synchronised_max_hilbert.npz"
+'EEG' (21659, 1, 258) (# of trials, # of time samples, # of channels); 
+'labels' (21659, 3) (first column refers to IDs, second column refers to labels)
