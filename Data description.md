@@ -1,3 +1,8 @@
+# Data Annotation
+- **Saccades** are rapid, ballistic eye movements that instantly change the gaze position. 
+- **Fixations** are defined as time periods without saccades
+- **Blinks** are considered a special case of fixation, where the pupil diameter is zero. 
+
 # Left-right
 ## Files
 - "LR_task_with_antisaccade_synchronised_max.npz"
@@ -21,9 +26,12 @@
 ## Input/Output
 train:validation:test = 0.7:0.15:0.15 (split based on IDs, same ID goes to the same group) <br />
 Input: minimally reprocessed hilbert data; Output: Left/Right <br />
-performance metrics: accuracy_score <br />
+Performance Metrics: accuracy_score <br />
 
-# Position task with dots
+
+
+
+# Absolute Position
 
 ## Files
 - "Position_task_with_dots_synchronised_min.npz"
@@ -47,10 +55,12 @@ performance metrics: accuracy_score <br />
 'EEG' (21659, 1, 258) (# of trials, # of time samples, # of channels) <br />
 'labels' (21659, 3) (first column refers to IDs, second column refers to labels) <br />
 
+
+
 ## Input/Output
 train: validation:test = <br />
 Input: minimally reprocessed hilbert data <br />
 Output: abs position <br />
-Model Type : Regression <br />
+Task Type : Regression <br />
 
 
