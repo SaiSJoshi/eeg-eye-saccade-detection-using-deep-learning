@@ -44,14 +44,13 @@ performance metrics: accuracy_score
 
 - "Position_task_with_dots_synchronised_max_hilbert.npz"
 
-'EEG' (21659, 1, 258) (# of trials, # of time samples, # of channels) \
-'labels' (21659, 3) (first column refers to IDs, second column refers to labels)\
+'EEG' (21659, 1, 258) (# of trials, # of time samples, # of channels) <br />
+'labels' (21659, 3) (first column refers to IDs, second column refers to labels) <br />
 
 ## Input/Output
-train: validation:test = \
-Input: minimally reprocessed hilbert data\
-Output: abs position\
-Model Type : Regression\
-
+train: validation:test = <br />
+Input: minimally reprocessed hilbert data <br />
+Output: abs position <br />
+Model Type : Regression <br />
 
 
