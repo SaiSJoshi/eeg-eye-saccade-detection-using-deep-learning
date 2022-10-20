@@ -28,30 +28,30 @@ performance metrics: accuracy_score
 ## Files
 - "Position_task_with_dots_synchronised_min.npz"
 
-'EEG' (21464, 500, 129) (# of trials, # of time samples, # of channels); 
-'labels' (21464, 3) (first column refers to IDs, second column refers to labels)
+'EEG' (21464, 500, 129) (# of trials, # of time samples, # of channels)\ 
+'labels' (21464, 3) (first column refers to IDs, second column refers to labels)\
 
 - "Position_task_with_dots_synchronised_min_hilbert.npz"
 
-'EEG' (21464, 1, 258) (# of trials, # of time samples, # of channels); 
-'labels' (21464, 3) (first column refers to IDs, second column refers to labels)
+'EEG' (21464, 1, 258) (# of trials, # of time samples, # of channels)\ 
+'labels' (21464, 3) (first column refers to IDs, second column refers to labels)\
 
 
 - "Position_task_with_dots_synchronised_max.npz"
 
-'EEG' (21659, 500, 129) (# of trials, # of time samples, # of channels); 
-'labels' (21464, 3) (first column refers to IDs, second column refers to labels)
+'EEG' (21659, 500, 129) (# of trials, # of time samples, # of channels)\ 
+'labels' (21464, 3) (first column refers to IDs, second column refers to labels)\
 
 - "Position_task_with_dots_synchronised_max_hilbert.npz"
 
-'EEG' (21659, 1, 258) (# of trials, # of time samples, # of channels); 
-'labels' (21659, 3) (first column refers to IDs, second column refers to labels)
+'EEG' (21659, 1, 258) (# of trials, # of time samples, # of channels) \
+'labels' (21659, 3) (first column refers to IDs, second column refers to labels)\
 
 ## Input/Output
-train: validation:test = 
-Input: minimally reprocessed hilbert data; 
-Output: abs position
-Model Type : Regression
+train: validation:test = \
+Input: minimally reprocessed hilbert data\
+Output: abs position\
+Model Type : Regression\
 
 
 
