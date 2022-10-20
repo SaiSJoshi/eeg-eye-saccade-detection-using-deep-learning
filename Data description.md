@@ -58,7 +58,7 @@ Performance Metrics: accuracy_score <br />
 
 
 ## Input/Output
-train: validation:test = <br />
+train: validation:test = 0.7:0.15:0.15 (split based on IDs, same ID goes to the same group)  <br />
 Input: minimally reprocessed hilbert data <br />
 Output: abs position <br />
 Task Type : Regression <br />
