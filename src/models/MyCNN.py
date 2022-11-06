@@ -7,7 +7,7 @@ import numpy as np
 
 
 # Creating a CNN class
-class ConvNeuralNet(nn.Module):
+class CNN(nn.Module):
     
 	#  Determine what layers and their order in CNN object 
     def __init__(self, in_channels, out_channels, kernel_size):

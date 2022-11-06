@@ -3,7 +3,9 @@ import torch
 import torch.nn as nn
 import os
 from Dataset import Dataset
-from MyXception import Xception
+from models.MyXception import Xception
+from models.MyPyramidalCNN import PyramidalCNN
+from models.MyCNN import CNN
 from Train import train, eval, test
 
 
@@ -59,6 +61,11 @@ def main():
     if config['architecture'] == 'Xception':
         model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
 
+    elif config['architecture'] == 'CNN':
+        model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
+
+    elif config['architecture'] == 'PyramidalCNN':
+        model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
     frames,phoneme = next(iter(train_loader))
 
     criterion = nn.CrossEntropyLoss() #Defining Loss function 
