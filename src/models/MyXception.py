@@ -71,20 +71,22 @@ class Xception(nn.Module):
             nn.Linear(in_features=self.nb_filters *
                       self.timesamples, out_features=output_shape)
         )
-
-    def forward(self, x, return_feats=False):
-
+        
+        modules = []
         for d in range(self.depth):
             if d == 0:
-                tmp = ResBlock_Xception(
-                    in_channels=self.in_channels, out_channels=self.nb_filters, kernel_size=self.kernel_size)(x)
+                modules.append(ResBlock_Xception(in_channels=self.in_channels, out_channels=self.nb_filters, kernel_size=self.kernel_size))
             else:
-                tmp = ResBlock_Xception(
-                    in_channels=self.nb_filters, out_channels=self.nb_filters, kernel_size=self.kernel_size)(tmp)
+                modules.append(ResBlock_Xception(in_channels=self.nb_filters, out_channels=self.nb_filters, kernel_size=self.kernel_size))
+        
+        self.ResBlock = nn.Sequential(*modules)
 
+
+    def forward(self, x, return_feats=False):
+        tmp = self.ResBlock(x)
         tmp = self.gap_layer_pad(tmp)
         tmp = self.gap_layer(tmp)
-        tmp = tmp.view(self.batch_size, -1)  # flatten
+        tmp = tmp.view(tmp.size(0), -1)  # flatten
         output = self.output_layer(tmp)
 
         if return_feats:
