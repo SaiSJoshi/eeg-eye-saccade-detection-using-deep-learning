@@ -3,17 +3,19 @@ import torch
 import torch.nn as nn
 import os
 from Dataset import Dataset
+import sklearn
+from sklearn.metrics import accuracy_score
 from models.MyXception import Xception
-from models.MyPyramidalCNN import PyramidalCNN
-from models.MyCNN import CNN
+from torchsummary import summary
 from Train import train, eval, test
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def main():
 
     config = {
-        'epochs': 25,
-        'batch_size' : 1,
+        'epochs': 50,
+        'batch_size' : 64,
         'learning_rate' : 0.001,
         'architecture' : 'Xception', # change the model here
         'task' : 'LR_task', # 'LR_task'/'Direction_task'/'Position_task' change it here
@@ -27,7 +29,7 @@ def main():
     }
 
 
-    data_path = 'data/'+config['task']+ '_with_' + config['synchronisation']+'_'+config['preprocessing']
+    data_path = './data/'+config['task']+ '_with_' + config['synchronisation']+'_'+config['preprocessing']
     data_path = data_path+'_hilbert.npz' if config['hilbert'] else data_path+'.npz'
 
     train_data = Dataset(data_path, train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], partition = 'train')
@@ -48,11 +50,11 @@ def main():
                                             shuffle=False)
 
     # Testing code to check if my data loaders are working
-    for i, data in enumerate(train_loader):
-        frames, phoneme = data
-        print(frames.shape, phoneme.shape)
-        # print(y)
-        break
+    # for i, data in enumerate(train_loader):
+    #     frames, phoneme = data
+    #     print(frames.shape, phoneme.shape)
+    #     # print(y)
+    #     break
 
     # add models here
 
@@ -66,11 +68,15 @@ def main():
 
     elif config['architecture'] == 'PyramidalCNN':
         model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
+        
+
     frames,phoneme = next(iter(train_loader))
+    model = model.to(device)
+    summary(model,frames)
 
     criterion = nn.CrossEntropyLoss() #Defining Loss function 
     optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate']) #Defining Optimizer
-
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=5, threshold=0.0001, threshold_mode='rel', cooldown=0, min_lr=0, eps=1e-08, verbose=False)
     # may add wandb part later
     torch.cuda.empty_cache()
 
@@ -82,7 +88,7 @@ def main():
 
         train_loss = train(model, optimizer, criterion, train_loader)
         accuracy = eval(model, val_loader)
-
+        
         print("\tTrain Loss: {:.4f}".format(train_loss))
         print("\tValidation Accuracy: {:.2f}%".format(accuracy))
 
@@ -99,8 +105,10 @@ def main():
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': train_loss,
                 'acc': accuracy}, 
-            './model_checkpoint.pth')
+            './checkpoints/Xception_checkpoint.pth')
 
+        
+        scheduler.step(accuracy)
         ### Save checkpoint in wandb
         #   wandb.save('checkpoint.pth')
 
@@ -110,7 +118,11 @@ def main():
     ### Finish your wandb run
     # run.finish()
 
-    predictions = test(model, test_loader)
+    test_accu, pred_list, true_list = test(model, test_loader)
+    print("\tTest Accuracy: {:.2f}%".format(test_accu))
+    results_name = './results/'+config["task"]+".npz"
+    print(results_name)
+    np.savez(results_name, pred = pred_list, truth = true_list)
 
 if __name__=='__main__':
     main()
