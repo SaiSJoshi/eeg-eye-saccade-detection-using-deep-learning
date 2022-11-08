@@ -14,7 +14,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 def main():
 
     config = {
-        'epochs': 50,
+        'epochs': 25,
         'batch_size' : 64,
         'learning_rate' : 0.001,
         'architecture' : 'Xception', # change the model here
@@ -32,9 +32,9 @@ def main():
     data_path = './data/'+config['task']+ '_with_' + config['synchronisation']+'_'+config['preprocessing']
     data_path = data_path+'_hilbert.npz' if config['hilbert'] else data_path+'.npz'
 
-    train_data = Dataset(data_path, train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], partition = 'train')
-    val_data = Dataset(data_path, train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], partition = 'val')
-    test_data = Dataset(data_path, train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], partition = 'test')
+    train_data = Dataset(data_path, hilbert = config['hilbert'], train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], partition = 'train')
+    val_data = Dataset(data_path, hilbert = config['hilbert'], train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], partition = 'val')
+    test_data = Dataset(data_path, hilbert = config['hilbert'], train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], partition = 'test')
 
 
     train_loader = torch.utils.data.DataLoader(train_data, num_workers=4,
@@ -58,7 +58,7 @@ def main():
 
     # add models here
 
-    input_shape = (1, 258) if config['hilbert'] else (500, 129)
+    input_shape = (1, 258) if config['hilbert'] else (129, 500)
     output_shape = 2 # only for LE tasks, need to change for other tasks
     if config['architecture'] == 'Xception':
         model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
@@ -80,7 +80,7 @@ def main():
     # may add wandb part later
     torch.cuda.empty_cache()
 
-    epochs = 25
+    epochs = config['epochs']
     best_acc = 0.0 ### Monitor best accuracy in your run
 
     for epoch in range(config['epochs']):

@@ -22,13 +22,16 @@ def split(ids, train, val, test):
 
 class Dataset(torch.utils.data.Dataset):
 
-    def __init__(self, data_path, train_ratio, val_ratio, test_ratio, partition):
+    def __init__(self, data_path, hilbert, train_ratio, val_ratio, test_ratio, partition):
 
         whole_data = np.load(data_path)
         whole_eeg = whole_data['EEG']
         whole_label = whole_data['labels']
         ids = whole_label[:, 0]
         whole_label = whole_label[:, 1:]
+        if ~hilbert:
+            whole_eeg = whole_eeg.transpose((0,2,1))
+
 
         # Split the data
         train_idx, val_idx, test_idx = split(
