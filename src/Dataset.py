@@ -29,7 +29,7 @@ class Dataset(torch.utils.data.Dataset):
         whole_label = whole_data['labels']
         ids = whole_label[:, 0]
         whole_label = whole_label[:, 1:]
-        if ~hilbert:
+        if hilbert == False:
             whole_eeg = whole_eeg.transpose((0,2,1))
 
 
