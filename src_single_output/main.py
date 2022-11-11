@@ -94,10 +94,10 @@ def main():
         train_loss, train_pred, train_true = train(model, optimizer, criterion, train_loader)
         print("\tTrain Loss: {:.4f}".format(train_loss))
         print("\tTrain:")
-        train_measure, train_pred = get_output(train_pred, train_true, config['task'])
+        train_measure, train_pred = get_output(train_pred, train_true, config['task'],train_data.label_min, train_data.label_max)
         val_pred, val_true = eval(model, val_loader)
         print("\tValidation:")
-        val_measure, val_pred = get_output(val_pred, val_true, config['task'])
+        val_measure, val_pred = get_output(val_pred, val_true, config['task'],val_data.label_min, val_data.label_max)
         
         
 
@@ -127,7 +127,7 @@ def main():
 
     test_pred, test_true = test(model, test_loader)
     print("\tTest:")
-    test_measure, test_pred = get_output(test_pred, test_true, config['task'])
+    test_measure, test_pred = get_output(test_pred, test_true, config['task'],test_data.label_min, test_data.label_max)
     results_name = './results/'+config['architecture']+'_'+config['task']+'_'+config['variable']+".npz"
     print(results_name)
     np.savez(results_name, pred = test_pred, truth = test_true, measure = test_measure)
