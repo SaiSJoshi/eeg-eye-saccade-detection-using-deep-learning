@@ -7,6 +7,8 @@ from sklearn.metrics import accuracy_score
 from torchsummary import summary
 
 from models.MyXception import Xception
+from models.MyPyramidalCNN import PyramidalCNN
+from models.MyCNN import CNN
 from Dataset import Dataset
 from Train import train, eval, test, get_output
 
