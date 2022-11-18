@@ -8,6 +8,9 @@ import numpy as np
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+def angle_loss(a, b):
+    return torch.mean(torch.square(torch.abs(torch.atan2(torch.sin(a - b), torch.cos(a - b)))))
+
 def binary_output(x):
     x = torch.tensor(x)
     x = torch.sigmoid(x)

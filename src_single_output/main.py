@@ -10,7 +10,7 @@ from models.MyXception import Xception
 from models.MyPyramidalCNN import PyramidalCNN
 from models.MyCNN import CNN
 from Dataset import Dataset
-from Train import train, eval, test, get_output
+from Train import train, eval, test, get_output, angle_loss
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -79,6 +79,8 @@ def main():
     summary(model,input_shape)
 
     criterion = nn.BCEWithLogitsLoss() if config['task']=='LR_task' else nn.MSELoss()
+    if config['variable'] == 'Angle':
+        criterion = angle_loss
     optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate']) #Defining Optimizer
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, min_lr=0.0001, verbose=True)
     if config['task']=='LR_task':
