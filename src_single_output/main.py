@@ -20,11 +20,11 @@ def main():
         'epochs': 50,
         'batch_size' : 64,
         'learning_rate' : 0.0001,
-        'architecture' : 'Xception', # change the model here
-        'task' : 'LR_task', # 'LR_task'/'Direction_task'/'Position_task' change it here
-        'variable' : 'LR', # 'LR_task': 'LR'; 'Direction_task': 'Angle'/'Amplitude'; 'Position_task': 'X'/'Y'
-        'synchronisation' : 'antisaccade_synchronised',
-        'hilbert' : False, # with (True) or without (False) hilbert transform
+        'architecture' : 'PyramidalCNN', # change the model here
+        'task' : 'Direction_task', # 'LR_task'/'Direction_task'/'Position_task' change it here
+        'variable' : 'Angle', # 'LR_task': 'LR'; 'Direction_task': 'Angle'/'Amplitude'; 'Position_task': 'X'/'Y'
+        'synchronisation' : 'processing_speed_synchronised',
+        'hilbert' : True, # with (True) or without (False) hilbert transform
         'preprocessing' : 'min', # min/max
         'train_ratio' : 0.7,
         'val_ratio' : 0.15,
@@ -68,10 +68,10 @@ def main():
         model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
 
     elif config['architecture'] == 'CNN':
-        model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
+        model = CNN(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
 
     elif config['architecture'] == 'PyramidalCNN':
-        model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
+        model = PyramidalCNN(input_shape, output_shape, kernel_size=16, nb_filters=64, depth=6, batch_size=config['batch_size'])
         
 
     frames,phoneme = next(iter(train_loader))
