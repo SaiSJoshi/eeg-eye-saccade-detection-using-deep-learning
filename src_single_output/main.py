@@ -63,7 +63,7 @@ def main():
     # add models here
 
     input_shape = (1, 258) if config['hilbert'] else (129, 500)
-    output_shape = 1 # only for LE tasks, need to change for other tasks
+    output_shape = 2 if config['task'] == 'Position_task' else 1 # For position tasks we have two output, but for others only one
     if config['architecture'] == 'Xception':
         model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
 
@@ -98,10 +98,10 @@ def main():
         train_loss, train_pred, train_true = train(model, optimizer, criterion, train_loader)
         print("\tTrain Loss: {:.4f}".format(train_loss))
         print("\tTrain:")
-        train_measure, train_pred = get_output(train_pred, train_true, config['task'],train_data.label_min, train_data.label_max)
+        train_measure, train_pred = get_output(train_pred, train_true, config['task'],config['variable'],train_data.label_min, train_data.label_max)
         val_pred, val_true = eval(model, val_loader)
         print("\tValidation:")
-        val_measure, val_pred = get_output(val_pred, val_true, config['task'],val_data.label_min, val_data.label_max)
+        val_measure, val_pred = get_output(val_pred, val_true, config['task'],config['variable'],val_data.label_min, val_data.label_max)
         
         
 
@@ -131,7 +131,7 @@ def main():
 
     test_pred, test_true = test(model, test_loader)
     print("\tTest:")
-    test_measure, test_pred = get_output(test_pred, test_true, config['task'],test_data.label_min, test_data.label_max)
+    test_measure, test_pred = get_output(test_pred, test_true, config['task'],config['variable'],test_data.label_min, test_data.label_max)
     results_name = './results/'+config['architecture']+'_'+config['task']+'_'+config['variable']+".npz"
     print(results_name)
     np.savez(results_name, pred = test_pred, truth = test_true, measure = test_measure)

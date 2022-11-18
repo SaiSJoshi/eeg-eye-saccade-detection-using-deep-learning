@@ -19,7 +19,7 @@ def binary_output(x):
     output = torch.tensor(output)
     return output
 
-def get_output(pred,true,task,label_min,label_max):
+def get_output(pred,true,task,variable,label_min,label_max):
     pred = torch.tensor(pred)
     true = torch.tensor(true)
     pred = pred*(label_max-label_min)+label_min
@@ -29,9 +29,16 @@ def get_output(pred,true,task,label_min,label_max):
         true = torch.tensor(true)
         measure = accuracy_score(true,pred)
         print("\tAccuracy: {:.2f}%".format(measure*100))
-    else:
-        measure = mean_squared_error(pred,true,squared=False)
-        print("\tMean squared error: {:.4f}".format(measure))
+    elif task == 'Direction_task':
+        if variable == 'Angle':
+            measure = np.sqrt(np.mean(np.square(np.arctan2(np.sin(true - pred.ravel()), np.cos(true - pred.ravel())))))
+            print("\tAngle mean squared error: {:.4f}".format(measure))
+        elif variable == 'Amplitude':
+            measure = mean_squared_error(pred,true,squared=False)
+            print("\tAmplitude mean squared error: {:.4f}".format(measure))
+    elif task == 'Position_task':
+        measure = np.linalg.norm(true - pred, axis=1).mean()
+        print("\tEuclidean distance: {:.4f}".format(measure))
     return measure, pred
 
 def train(model, optimizer, criterion, dataloader):

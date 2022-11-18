@@ -38,10 +38,8 @@ class Dataset(torch.utils.data.Dataset):
             elif variable == 'Amplitude':
                 whole_label = whole_label[:,0]
         elif task == 'Position_task':
-            if variable == 'X':
-                 whole_label = whole_label[:,0]
-            elif variable == 'Y':
-                whole_label = whole_label[:,1]
+            pass
+
         
         label_min = np.min(whole_label)
         label_max = np.max(whole_label)
