@@ -31,6 +31,8 @@ def get_output(pred,true,task,variable,label_min,label_max):
         print("\tAccuracy: {:.2f}%".format(measure*100))
     elif task == 'Direction_task':
         if variable == 'Angle':
+            pred = pred.numpy()
+            true = true.numpy()
             measure = np.sqrt(np.mean(np.square(np.arctan2(np.sin(true - pred.ravel()), np.cos(true - pred.ravel())))))
             print("\tAngle mean squared error: {:.4f}".format(measure))
         elif variable == 'Amplitude':
@@ -59,13 +61,13 @@ def train(model, optimizer, criterion, dataloader):
         mfccs = mfccs.to(device)
         phonemes = phonemes.to(device)
         
-        phonemes = torch.flatten(phonemes)
+        phonemes = torch.squeeze(phonemes)
 
         # Forward Propagation
         logits = model(mfccs)
         logits = logits.to(torch.float64)
         phonemes = phonemes.to(torch.float64)
-        logits = torch.flatten(logits)
+        logits = torch.squeeze(logits)
         # Loss Calculation
         loss = criterion(logits, phonemes)
         phone_pred_list.extend(logits.cpu().tolist())

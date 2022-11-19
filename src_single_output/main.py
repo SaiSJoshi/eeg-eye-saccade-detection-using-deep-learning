@@ -79,7 +79,7 @@ def main():
     summary(model,input_shape)
 
     criterion = nn.BCEWithLogitsLoss() if config['task']=='LR_task' else nn.MSELoss()
-    if config['variable'] == 'Angle':
+    if config['variable'] == 'Angle' and config['task']=='Direction_task':
         criterion = angle_loss
     optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate']) #Defining Optimizer
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, min_lr=0.0001, verbose=True)
