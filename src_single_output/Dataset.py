@@ -41,12 +41,12 @@ class Dataset(torch.utils.data.Dataset):
             pass
 
         
-        label_min = np.min(whole_label)
-        label_max = np.max(whole_label)
+        # label_min = np.min(whole_label)
+        # label_max = np.max(whole_label)
 
-        whole_label = (whole_label - label_min)/(label_max - label_min)
-        self.label_min = label_min
-        self.label_max = label_max
+        # whole_label = (whole_label - label_min)/(label_max - label_min)
+        # self.label_min = label_min
+        # self.label_max = label_max
 
         # Split the data
         train_idx, val_idx, test_idx = split(

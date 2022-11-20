@@ -14,6 +14,7 @@ from Train import train, eval, test, get_output, angle_loss
 from models.NewCNN import NewCNN
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(device)
 
 def main():
 
@@ -21,11 +22,11 @@ def main():
         'epochs': 50,
         'batch_size' : 64,
         'learning_rate' : 0.0001,
-        'architecture' : 'CNN', # change the model here
-        'task' : 'LR_task', # 'LR_task'/'Direction_task'/'Position_task' change it here
-        'variable' : 'LR', # 'LR_task': 'LR'; 'Direction_task': 'Angle'/'Amplitude'; 'Position_task': 'X'/'Y'
-        'synchronisation' : 'antisaccade_synchronised',#'processing_speed_synchronised',
-        'hilbert' : True, # with (True) or without (False) hilbert transform
+        'architecture' : 'Xception', # change the model here
+        'task' : 'Position_task', # 'LR_task'/'Direction_task'/'Position_task' change it here
+        'variable' : 'Position', # 'LR_task': 'LR'; 'Direction_task': 'Angle'/'Amplitude'; 'Position_task': 'Position'
+        'synchronisation' : 'dots_synchronised',#'processing_speed_synchronised',
+        'hilbert' : False, # with (True) or without (False) hilbert transform
         'preprocessing' : 'min', # min/max
         'train_ratio' : 0.7,
         'val_ratio' : 0.15,
@@ -34,7 +35,7 @@ def main():
     }
 
 
-    data_path = '../data/'+config['task']+ '_with_' + config['synchronisation']+'_'+config['preprocessing']
+    data_path = './data/'+config['task']+ '_with_' + config['synchronisation']+'_'+config['preprocessing']
     data_path = data_path+'_hilbert.npz' if config['hilbert'] else data_path+'.npz'
 
     train_data = Dataset(data_path, hilbert = config['hilbert'], train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], task = config['task'], variable = config['variable'], partition = 'train')
@@ -98,10 +99,10 @@ def main():
         train_loss, train_pred, train_true = train(model, optimizer, criterion, scaler, train_loader)
         print("\tTrain Loss: {:.4f}".format(train_loss))
         print("\tTrain:")
-        train_measure, train_pred = get_output(train_pred, train_true, config['task'],config['variable'],train_data.label_min, train_data.label_max)
+        train_measure, train_pred = get_output(train_pred, train_true, config['task'],config['variable'])
         val_pred, val_true = eval(model, val_loader)
         print("\tValidation:")
-        val_measure, val_pred = get_output(val_pred, val_true, config['task'],config['variable'],val_data.label_min, val_data.label_max)
+        val_measure, val_pred = get_output(val_pred, val_true, config['task'],config['variable'])
         
         ## Early Stopping condition
         if abs(val_measure - best_val_meansure) > 0.1:
@@ -125,7 +126,7 @@ def main():
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': train_loss,
             'acc': val_measure}, 
-        '../checkpoints/'+config['architecture']+'_'+config['task']+'_checkpoint.pth')
+        './checkpoints/'+config['architecture']+'_'+config['task']+'_checkpoint.pth')
 
         
         scheduler.step(val_measure)
@@ -140,8 +141,8 @@ def main():
 
     test_pred, test_true = test(model, test_loader)
     print("\tTest:")
-    test_measure, test_pred = get_output(test_pred, test_true, config['task'],config['variable'],test_data.label_min, test_data.label_max)
-    results_name = '../results/'+config['architecture']+'_'+config['task']+'_'+config['variable']+".npz"
+    test_measure, test_pred = get_output(test_pred, test_true, config['task'],config['variable'])
+    results_name = './results/'+config['architecture']+'_'+config['task']+'_'+config['variable']+".npz"
     print(results_name)
     np.savez(results_name, pred = test_pred, truth = test_true, measure = test_measure)
 

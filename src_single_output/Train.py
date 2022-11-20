@@ -18,11 +18,11 @@ def binary_output(x):
     output = torch.tensor(output)
     return output
 
-def get_output(pred, true, task, variable, label_min, label_max):
+def get_output(pred, true, task, variable):
     pred = torch.tensor(pred)
     true = torch.tensor(true)
-    pred = pred * (label_max - label_min) + label_min
-    true = true*(label_max-label_min) + label_min
+    # pred = pred * (label_max - label_min) + label_min
+    # true = true*(label_max-label_min) + label_min
     if task ==  'LR_task':
         pred = binary_output(pred)
 
