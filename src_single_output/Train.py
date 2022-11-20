@@ -42,7 +42,7 @@ def get_output(pred, true, task, variable, label_min, label_max):
         print("\tEuclidean distance: {:.4f}".format(measure))
     return measure, pred
 
-def train(model, optimizer, criterion, dataloader):
+def train(model, optimizer, criterion, scaler, dataloader):
 
     model.train()
     train_loss = 0.0  # Monitoring Loss
@@ -62,15 +62,16 @@ def train(model, optimizer, criterion, dataloader):
         
         phonemes = torch.squeeze(phonemes)
 
-        # Forward Propagation
-        logits = model(mfccs)
-        logits = logits.to(torch.float64)
-        phonemes = phonemes.to(torch.float64)
-        logits = torch.squeeze(logits)
-        # Loss Calculation
-        loss = criterion(logits, phonemes)
-        phone_pred_list.extend(logits.cpu().tolist())
-        phone_true_list.extend(phonemes.cpu().tolist())
+        with torch.cuda.amp.autocast(): # This implements mixed precision. Thats it! 
+            # Forward Propagation
+            logits = model(mfccs)
+            logits = logits.to(torch.float64)
+            phonemes = phonemes.to(torch.float64)
+            logits = torch.squeeze(logits)
+            # Loss Calculation
+            loss = criterion(logits, phonemes)
+            phone_pred_list.extend(logits.cpu().tolist())
+            phone_true_list.extend(phonemes.cpu().tolist())
 
         
         # Update no. of correct predictions & loss as we iterate
@@ -84,12 +85,9 @@ def train(model, optimizer, criterion, dataloader):
         # Initialize Gradients
         optimizer.zero_grad()
 
-        # Backward Propagation
-        loss.backward()
-        
-
-        # Gradient Descent
-        optimizer.step()
+        scaler.scale(loss).backward() # This is a replacement for loss.backward()
+        scaler.step(optimizer) # This is a replacement for optimizer.step()
+        scaler.update() 
 
         batch_bar.update() # Update tqdm bar
 

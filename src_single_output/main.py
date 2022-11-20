@@ -80,6 +80,7 @@ def main():
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, min_lr=0.0001, verbose=True)
     if config['task']=='LR_task':
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=5, min_lr=0.0001, verbose=True)
+    scaler = torch.cuda.amp.GradScaler()
 
     # may add wandb part later
     torch.cuda.empty_cache()
@@ -94,7 +95,7 @@ def main():
     for epoch in range(config['epochs']):
         print("\nEpoch {}/{}".format(epoch+1, epochs))
 
-        train_loss, train_pred, train_true = train(model, optimizer, criterion, train_loader)
+        train_loss, train_pred, train_true = train(model, optimizer, criterion, scaler, train_loader)
         print("\tTrain Loss: {:.4f}".format(train_loss))
         print("\tTrain:")
         train_measure, train_pred = get_output(train_pred, train_true, config['task'],config['variable'],train_data.label_min, train_data.label_max)
