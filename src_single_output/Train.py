@@ -36,9 +36,11 @@ def get_output(pred, true, task, variable, label_min, label_max):
             print("\tAngle mean squared error: {:.4f}".format(measure))
         elif variable == 'Amplitude':
             measure = mean_squared_error(pred,true,squared=False)
+            measure = measure/2 # pixel -> mm
             print("\tAmplitude mean squared error: {:.4f}".format(measure))
     elif task == 'Position_task':
         measure = np.linalg.norm(true - pred, axis=1).mean()
+        measure = measure/2 # pixel -> mm
         print("\tEuclidean distance: {:.4f}".format(measure))
     return measure, pred
 
