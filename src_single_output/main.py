@@ -11,6 +11,7 @@ from models.MyPyramidalCNN import PyramidalCNN
 from models.MyCNN import CNN
 from Dataset import Dataset
 from Train import train, eval, test, get_output, angle_loss
+from models.NewCNN import NewCNN
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -20,10 +21,10 @@ def main():
         'epochs': 50,
         'batch_size' : 64,
         'learning_rate' : 0.0001,
-        'architecture' : 'PyramidalCNN', # change the model here
-        'task' : 'Direction_task', # 'LR_task'/'Direction_task'/'Position_task' change it here
-        'variable' : 'Angle', # 'LR_task': 'LR'; 'Direction_task': 'Angle'/'Amplitude'; 'Position_task': 'X'/'Y'
-        'synchronisation' : 'processing_speed_synchronised',
+        'architecture' : 'CNN', # change the model here
+        'task' : 'LR_task', # 'LR_task'/'Direction_task'/'Position_task' change it here
+        'variable' : 'LR', # 'LR_task': 'LR'; 'Direction_task': 'Angle'/'Amplitude'; 'Position_task': 'X'/'Y'
+        'synchronisation' : 'antisaccade_synchronised',#'processing_speed_synchronised',
         'hilbert' : True, # with (True) or without (False) hilbert transform
         'preprocessing' : 'min', # min/max
         'train_ratio' : 0.7,
@@ -33,7 +34,7 @@ def main():
     }
 
 
-    data_path = './data/'+config['task']+ '_with_' + config['synchronisation']+'_'+config['preprocessing']
+    data_path = '../data/'+config['task']+ '_with_' + config['synchronisation']+'_'+config['preprocessing']
     data_path = data_path+'_hilbert.npz' if config['hilbert'] else data_path+'.npz'
 
     train_data = Dataset(data_path, hilbert = config['hilbert'], train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], task = config['task'], variable = config['variable'], partition = 'train')
@@ -53,15 +54,6 @@ def main():
                                             batch_size=config['batch_size'], pin_memory=True,
                                             shuffle=False)
 
-    # Testing code to check if my data loaders are working
-    # for i, data in enumerate(train_loader):
-    #     frames, phoneme = data
-    #     print(frames.shape, phoneme.shape)
-    #     # print(y)
-    #     break
-
-    # add models here
-
     input_shape = (1, 258) if config['hilbert'] else (129, 500)
     output_shape = 2 if config['task'] == 'Position_task' else 1 # For position tasks we have two output, but for others only one
     if config['architecture'] == 'Xception':
@@ -72,6 +64,9 @@ def main():
 
     elif config['architecture'] == 'PyramidalCNN':
         model = PyramidalCNN(input_shape, output_shape, kernel_size=16, nb_filters=64, depth=6, batch_size=config['batch_size'])
+
+    elif config['architecture'] == 'NewCNN':
+        model = CNN(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
         
 
     frames,phoneme = next(iter(train_loader))
@@ -92,6 +87,10 @@ def main():
     epochs = config['epochs']
     best_acc = 0.0 ### Monitor best accuracy in your run
 
+    # Initializing for early stopping 
+    best_val_meansure = 0.0
+    patience_count = 0 
+    patience_max = 20 # TODO: initialized based on paper
     for epoch in range(config['epochs']):
         print("\nEpoch {}/{}".format(epoch+1, epochs))
 
@@ -103,7 +102,16 @@ def main():
         print("\tValidation:")
         val_measure, val_pred = get_output(val_pred, val_true, config['task'],config['variable'],val_data.label_min, val_data.label_max)
         
-        
+        ## Early Stopping condition
+        if abs(val_measure - best_val_meansure) > 0.1:
+            best_val_meansure = val_measure
+        else: 
+            patience_count += 1
+
+        if patience_count  >= patience_max:
+            print("\nValid Accuracy didn't improve since last {} epochs.", patience_count)
+            break 
+
 
 
         ### Log metrics at each epoch in your run - Optionally, you can log at each batch inside train/eval functions (explore wandb documentation/wandb recitation)
@@ -116,23 +124,23 @@ def main():
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': train_loss,
             'acc': val_measure}, 
-        './checkpoints/'+config['architecture']+'_'+config['task']+'_checkpoint.pth')
+        '../checkpoints/'+config['architecture']+'_'+config['task']+'_checkpoint.pth')
 
         
         scheduler.step(val_measure)
-        ### Save checkpoint in wandb
-        #   wandb.save('checkpoint.pth')
+    #     ## Save checkpoint in wandb
+        #    wandb.save('checkpoint.pth')
 
-        # Is your training time very high? Look into mixed precision training if your GPU (Tesla T4, V100, etc) can make use of it 
-        # Refer - https://pytorch.org/docs/stable/notes/amp_examples.html
+    #     Is your training time very high? Look into mixed precision training if your GPU (Tesla T4, V100, etc) can make use of it 
+    #     Refer - https://pytorch.org/docs/stable/notes/amp_examples.html
 
-    ### Finish your wandb run
+    # ## Finish your wandb run
     # run.finish()
 
     test_pred, test_true = test(model, test_loader)
     print("\tTest:")
     test_measure, test_pred = get_output(test_pred, test_true, config['task'],config['variable'],test_data.label_min, test_data.label_max)
-    results_name = './results/'+config['architecture']+'_'+config['task']+'_'+config['variable']+".npz"
+    results_name = '../results/'+config['architecture']+'_'+config['task']+'_'+config['variable']+".npz"
     print(results_name)
     np.savez(results_name, pred = test_pred, truth = test_true, measure = test_measure)
 
