@@ -12,21 +12,20 @@ def angle_loss(a, b):
     return torch.mean(torch.square(torch.abs(torch.atan2(torch.sin(a - b), torch.cos(a - b)))))
 
 def binary_output(x):
-    x = torch.tensor(x)
     x = torch.sigmoid(x)
     output = np.zeros(x.shape)
-    output[x>=0.5]=1
+    output[x >= 0.3] = 1
     output = torch.tensor(output)
     return output
 
-def get_output(pred,true,task,variable,label_min,label_max):
+def get_output(pred, true, task, variable, label_min, label_max):
     pred = torch.tensor(pred)
     true = torch.tensor(true)
-    pred = pred*(label_max-label_min)+label_min
-    true = true*(label_max-label_min)+label_min
+    pred = pred * (label_max - label_min) + label_min
+    true = true*(label_max-label_min) + label_min
     if task ==  'LR_task':
         pred = binary_output(pred)
-        true = torch.tensor(true)
+
         measure = accuracy_score(true,pred)
         print("\tAccuracy: {:.2f}%".format(measure*100))
     elif task == 'Direction_task':
@@ -51,7 +50,7 @@ def train(model, optimizer, criterion, dataloader):
     phone_true_list = []
     phone_pred_list = []
 
-    # Prsogress Bar 
+    # Progress Bar 
     batch_bar = tqdm(total=len(dataloader), dynamic_ncols=True, leave=False, position=0, desc='Train', ncols=5) 
     
 
