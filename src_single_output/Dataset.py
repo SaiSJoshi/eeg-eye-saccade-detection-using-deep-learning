@@ -19,6 +19,25 @@ def split(ids, train, val, test):
 
     return train, val, test
 
+def save_label(data_path, variable, IsGenerated, generated_label = None):
+    whole_data = np.load(data_path)
+    whole_data = dict(whole_data)
+
+    if IsGenerated == False:
+        whole_label = whole_data['labels']
+        whole_label = whole_label[:, 1:]
+        if variable == 'Angle':
+            whole_label = whole_label[:,1]
+        elif variable == 'Amplitude':
+            whole_label = whole_label[:,0]
+    else:
+        whole_label = generated_label
+        
+    whole_data[variable] = {"IsGenerated": IsGenerated,
+                            "label": whole_label
+                            }
+    
+    np.savez("data_path",**whole_data)
 
 class Dataset(torch.utils.data.Dataset):
 
@@ -82,3 +101,26 @@ class Dataset(torch.utils.data.Dataset):
         phoneme = torch.tensor(self.label[ind])
 
         return frames, phoneme
+
+class TestDataset(torch.utils.data.Dataset): # for generating labels
+
+    def __init__(self, data_path):
+
+        whole_data = np.load(data_path)
+        whole_eeg = whole_data['EEG']
+        EEG = whole_eeg.transpose((0,2,1))
+
+        self.EEG = EEG  # (n,1,258)
+        # (n,1) # Left_Right # Angle /Amplitude (n,2) # position (n,2)
+
+        self.length = len(self.EEG)
+
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, ind):
+
+        signal = self.EEG[ind]  # (1,258)
+
+        return torch.tensor(signal)
+

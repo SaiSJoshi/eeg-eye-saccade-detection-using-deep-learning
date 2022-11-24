@@ -162,3 +162,27 @@ def test(model,test_loader):
 
     # Calculate Accuracy
     return phone_pred_list, phone_true_list
+
+def generation(model,test_loader):
+    model.eval()  # set model in evaluation mode
+
+    pred_list = []
+
+    for i, data in enumerate(test_loader):
+
+        # Move data to device (ideally GPU)
+        data = data.to(device)
+
+        with torch.inference_mode():  # makes sure that there are no gradients computed as we are not training the model now
+            # Forward Propagation
+            predicted_label = model(data)
+
+
+        # Store Pred Labels
+        pred_list.extend(predicted_label.cpu().tolist())
+
+        del data, predicted_label
+        torch.cuda.empty_cache()
+
+    # Calculate Accuracy
+    return pred_list

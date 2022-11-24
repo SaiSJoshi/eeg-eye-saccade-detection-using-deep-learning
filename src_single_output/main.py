@@ -126,7 +126,7 @@ def main():
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': train_loss,
             'acc': val_measure}, 
-        './checkpoints/'+config['architecture']+'_'+config['task']+'_checkpoint.pth')
+        './checkpoints/'+config['architecture']+'_'+config['task']+'_'+config['variable']+'_checkpoint.pth')
 
         
         scheduler.step(val_measure)
