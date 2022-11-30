@@ -37,7 +37,7 @@ def save_label(data_path, variable, IsGenerated, generated_label = None):
                             "label": whole_label
                             }
     
-    np.savez("data_path",**whole_data)
+    np.savez(data_path,**whole_data)
 
 class Dataset(torch.utils.data.Dataset):
 
@@ -122,5 +122,5 @@ class TestDataset(torch.utils.data.Dataset): # for generating labels
 
         signal = self.EEG[ind]  # (1,258)
 
-        return torch.tensor(signal)
+        return torch.FloatTensor(signal)
 

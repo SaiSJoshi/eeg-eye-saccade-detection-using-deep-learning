@@ -29,9 +29,9 @@ config = {
 }
 
 exsiting_path = './data/'+config['task']+ '_with_' + config['synchronisation']+'_min.npz'
-data_path = [['./data/LR_task_with_antisaccade_synchronised_min.npz'],
-        ['./data/Direction_task_with_dots_synchronised_min.npz'],
-        ['./data/Position_task_with_dots_synchronised_min.npz']
+data_path = ['./data/LR_task_with_antisaccade_synchronised_min.npz',
+        './data/Direction_task_with_dots_synchronised_min.npz',
+        './data/Position_task_with_dots_synchronised_min.npz'
         ]
 
 
@@ -71,7 +71,7 @@ optimizer.load_state_dict(best_model['optimizer_state_dict'])
 # create labels for 
 for i in range(len(data_path)):
     if data_path[i] == exsiting_path:
-        save_label(data_path, config['variable'], IsGenerated = False)
+        save_label(data_path[i], config['variable'], IsGenerated = False)
     else:
         test_data = TestDataset(data_path[i])
 
@@ -81,13 +81,9 @@ for i in range(len(data_path)):
         pred_list = generation(model,test_loader)
 
         if config['task'] ==  'LR_task':
+            pred_list = torch.tensor(pred_list)
             pred_list = binary_output(pred_list)
         
         generated_label = np.array(pred_list)
 
-        save_label(data_path, config['variable'], IsGenerated = True, generated_label = generated_label)
-
-    
-
-
-    
+        save_label(data_path[i], config['variable'], IsGenerated = True, generated_label = generated_label)
