@@ -20,7 +20,7 @@ def split(ids, train, val, test):
     return train, val, test
 
 def save_label(data_path, variable, IsGenerated, generated_label = None):
-    whole_data = np.load(data_path)
+    whole_data = np.load(data_path, allow_pickle=True)
     whole_data = dict(whole_data)
 
     if IsGenerated == False:
@@ -43,7 +43,7 @@ class Dataset(torch.utils.data.Dataset):
 
     def __init__(self, data_path, hilbert, train_ratio, val_ratio, test_ratio, task, variable, partition):
 
-        whole_data = np.load(data_path)
+        whole_data = np.load(data_path, allow_pickle=True)
         whole_eeg = whole_data['EEG']
         whole_label = whole_data['labels']
         ids = whole_label[:, 0]
@@ -106,7 +106,7 @@ class TestDataset(torch.utils.data.Dataset): # for generating labels
 
     def __init__(self, data_path):
 
-        whole_data = np.load(data_path)
+        whole_data = np.load(data_path, allow_pickle=True)
         whole_eeg = whole_data['EEG']
         EEG = whole_eeg.transpose((0,2,1))
 
@@ -123,4 +123,3 @@ class TestDataset(torch.utils.data.Dataset): # for generating labels
         signal = self.EEG[ind]  # (1,258)
 
         return torch.FloatTensor(signal)
-
