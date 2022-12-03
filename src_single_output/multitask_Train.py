@@ -56,23 +56,23 @@ def train(model, optimizer, criterion, scaler, dataloader):
     batch_bar = tqdm(total=len(dataloader), dynamic_ncols=True, leave=False, position=0, desc='Train', ncols=5) 
     
 
-    for iter, (mfccs, phonemes) in enumerate(dataloader):
+    for iter, (raw_eeg, labels) in enumerate(dataloader):
         
         # Move Data to Device (Ideally GPU)
-        mfccs = mfccs.to(device)
-        phonemes = phonemes.to(device)
+        raw_eeg = raw_eeg.to(device)
+        labels = labels.to(device)
         
-        phonemes = torch.squeeze(phonemes)
+        labels = torch.squeeze(labels)
 
         with torch.cuda.amp.autocast(): # This implements mixed precision. Thats it! 
             # Forward Propagation
-            out_lr, out_angle, out_amp, out_abs_pos = model(mfccs)
+            out_lr, out_angle, out_amp, out_abs_pos = model(raw_eeg)
 
-            logits = logits.to(torch.float64)
-            phonemes = phonemes.to(torch.float64)
+            logits = logits.to(torch.float64) # TODO: add all the labels
+            labels = labels.to(torch.float64)
             logits = torch.squeeze(logits)
             # Loss Calculation
-            loss = criterion(logits, phonemes)
+            loss = criterion(logits, labels)
             lr_loss = lr_criterion(out_lr, y_lr) # TODO: change dataloader to return all 4 labels
             angle_loss = angle_criterion(out_angle, out_lr)
             amp_loss = amplitude_criterion()
@@ -81,7 +81,8 @@ def train(model, optimizer, criterion, scaler, dataloader):
             loss = a * lr_loss + b * angle_loss + c * out_amp + d * abs_pos_loss
             
             phone_pred_list.extend(logits.cpu().tolist())
-            phone_true_list.extend(phonemes.cpu().tolist())
+            phone_true_list.extend(labels.cpu().tolist())
+            #-----------------------------------------------------change everything above
 
         
         # Update no. of correct predictions & loss as we iterate
@@ -112,61 +113,61 @@ def eval(model, dataloader):
 
     model.eval()  # set model in evaluation mode
 
-    phone_true_list = []
-    phone_pred_list = []
+    true_list = []
+    pred_list = []
 
     for i, data in enumerate(dataloader):
 
-        frames, phonemes = data
+        raw_eeg, labels = data
         # Move data to device (ideally GPU)
-        frames, phonemes = frames.to(device), phonemes.to(device)
+        raw_eeg, labels = raw_eeg.to(device), labels.to(device)
 
         with torch.inference_mode():  # makes sure that there are no gradients computed as we are not training the model now
             # Forward Propagation
-            logits = model(frames)
+            pred_labels = model(raw_eeg)
 
 
         # Store Pred and True Labels
-        phone_pred_list.extend(logits.cpu().tolist())
-        phone_true_list.extend(phonemes.cpu().tolist())
+        pred_list.extend(pred_labels.cpu().tolist())
+        true_list.extend(labels.cpu().tolist())
 
         # Do you think we need loss.backward() and optimizer.step() here?
 
         # del frames, phonemes, logits, loss
-        del frames, phonemes, logits
+        del raw_eeg, labels, pred_labels
         torch.cuda.empty_cache()
 
     # Calculate Accuracy
     
-    return phone_pred_list, phone_true_list
+    return pred_list, true_list
 
 
 def test(model,test_loader):
     model.eval()  # set model in evaluation mode
 
-    phone_true_list = []
-    phone_pred_list = []
+    true_list = []
+    pred_list = []
 
     for i, data in enumerate(test_loader):
 
-        frames, phonemes = data
+        raw_eeg, labels = data
         # Move data to device (ideally GPU)
-        frames, phonemes = frames.to(device), phonemes.to(device)
+        raw_eeg, labels = raw_eeg.to(device), labels.to(device)
 
         with torch.inference_mode():  # makes sure that there are no gradients computed as we are not training the model now
             # Forward Propagation
-            logits = model(frames)
+            pred_labels = model(raw_eeg)
 
 
         # Store Pred and True Labels
-        phone_pred_list.extend(logits.cpu().tolist())
-        phone_true_list.extend(phonemes.cpu().tolist())
+        pred_list.extend(pred_labels.cpu().tolist())
+        true_list.extend(labels.cpu().tolist())
 
         # Do you think we need loss.backward() and optimizer.step() here?
 
         # del frames, phonemes, logits, loss
-        del frames, phonemes, logits
+        del raw_eeg, labels, pred_labels
         torch.cuda.empty_cache()
 
     # Calculate Accuracy
-    return phone_pred_list, phone_true_list
+    return pred_list, true_list

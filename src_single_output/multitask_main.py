@@ -34,7 +34,7 @@ def main():
         
     }
 
-
+    # TODO: import as list for datapath
     data_path = '../data/'+config['task']+ '_with_' + config['synchronisation']+'_'+config['preprocessing']
     data_path = data_path+'_hilbert.npz' if config['hilbert'] else data_path+'.npz'
 
@@ -57,6 +57,7 @@ def main():
 
     input_shape = (1, 258) if config['hilbert'] else (129, 500)
     output_shape = 2 if config['task'] == 'Position_task' else 1 # For position tasks we have two output, but for others only one
+    
     if config['architecture'] == 'Xception':
         model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
 
@@ -68,9 +69,10 @@ def main():
 
     elif config['architecture'] == 'NewCNN':
         model = CNN(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
-        
+      
 
-    frames,phoneme = next(iter(train_loader))
+    # frames,phoneme = next(iter(train_loader))
+
     model = model.to(device)
     summary(model,input_shape)
 
@@ -80,21 +82,23 @@ def main():
 
     # Losses
     lr_criterion = nn.BCEWithLogitsLoss()
-    angle_criterion = nn.MSELoss()
+    angle_criterion = angle_loss
     amplitude_criterion = nn.MSELoss()
     abs_pos_coriterion = nn.MSELoss()
     criterion = [lr_criterion, angle_criterion, amplitude_criterion, abs_pos_coriterion]
     optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate']) #Defining Optimizer
+    # TODO: may change the scheduler later
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, min_lr=0.0001, verbose=True)
     if config['task']=='LR_task':
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=5, min_lr=0.0001, verbose=True)
     scaler = torch.cuda.amp.GradScaler()
 
-    # may add wandb part later
+    # TODO: may add wandb part later once after there is no bug in the code
     torch.cuda.empty_cache()
 
     epochs = config['epochs']
-    best_acc = 0.0 ### Monitor best accuracy in your run
+    # TODO: change how to store the accuracies, store it in separate variables
+    best_acc = 0.0 # Monitor best accuracy in your run
 
     # Initializing for early stopping 
     best_val_meansure = 0.0
@@ -153,5 +157,5 @@ def main():
     print(results_name)
     np.savez(results_name, pred = test_pred, truth = test_true, measure = test_measure)
 
-if __name__=='__main__':
+if __name__=='__multitask_main__':
     main()
