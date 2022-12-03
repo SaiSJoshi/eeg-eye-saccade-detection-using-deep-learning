@@ -42,7 +42,7 @@ def save_label(data_path, variable, IsGenerated, generated_label = None):
 
 class Dataset(torch.utils.data.Dataset):
 
-    def __init__(self, data_path, hilbert, train_ratio, val_ratio, test_ratio, task, variable, partition):
+    def __init__(self, data_path, train_ratio, val_ratio, test_ratio, partition):
         
         max_ids = 0
         whole_eeg = []
@@ -56,8 +56,8 @@ class Dataset(torch.utils.data.Dataset):
             whole_data = np.load(data_path[i], allow_pickle=True)
             eeg = whole_data['EEG']
             labels = whole_data['labels']
-            if hilbert == False:
-                eeg = eeg.transpose((0,2,1))
+            
+            eeg = eeg.transpose((0,2,1))
             
             whole_eeg.append(eeg)
             whole_LR_label.append(whole_data['LR'].item()['label'])

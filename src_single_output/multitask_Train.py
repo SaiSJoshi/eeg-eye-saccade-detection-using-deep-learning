@@ -56,7 +56,7 @@ def train(model, optimizer, criterion, scaler, dataloader):
     batch_bar = tqdm(total=len(dataloader), dynamic_ncols=True, leave=False, position=0, desc='Train', ncols=5) 
     
 
-    for iter, (raw_eeg, labels) in enumerate(dataloader):
+    for iter, (raw_eeg, LR_label, Angle_label, Amp_label, Pos_label, IsGenerated) in enumerate(dataloader):
         
         # Move Data to Device (Ideally GPU)
         raw_eeg = raw_eeg.to(device)

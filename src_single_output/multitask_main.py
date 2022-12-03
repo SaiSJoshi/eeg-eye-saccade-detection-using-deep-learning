@@ -9,8 +9,8 @@ from torchsummary import summary
 from models.MyXception import Xception
 from models.MyPyramidalCNN import PyramidalCNN
 from models.MyCNN import CNN
-from Dataset import Dataset
-from Train import train, eval, test, get_output, angle_loss
+from multitask_Dataset import Dataset
+from multitask_Train import train, eval, test, get_output, angle_loss
 from models.NewCNN import NewCNN
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -35,12 +35,14 @@ def main():
     }
 
     # TODO: import as list for datapath
-    data_path = '../data/'+config['task']+ '_with_' + config['synchronisation']+'_'+config['preprocessing']
-    data_path = data_path+'_hilbert.npz' if config['hilbert'] else data_path+'.npz'
+    data_path = ['./data/LR_task_with_antisaccade_synchronised_min.npz',
+        './data/Direction_task_with_dots_synchronised_min.npz',
+        './data/Position_task_with_dots_synchronised_min.npz'
+        ]
 
-    train_data = Dataset(data_path, hilbert = config['hilbert'], train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], task = config['task'], variable = config['variable'], partition = 'train')
-    val_data = Dataset(data_path, hilbert = config['hilbert'], train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], task = config['task'], variable = config['variable'], partition = 'val')
-    test_data = Dataset(data_path, hilbert = config['hilbert'], train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], task = config['task'], variable = config['variable'], partition = 'test')
+    train_data = Dataset(data_path, train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], partition = 'train')
+    val_data = Dataset(data_path, train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], partition = 'val')
+    test_data = Dataset(data_path, train_ratio = config['train_ratio'], val_ratio = config['val_ratio'], test_ratio = config['test_ratio'], partition = 'test')
 
 
     train_loader = torch.utils.data.DataLoader(train_data, num_workers=4,
@@ -55,7 +57,7 @@ def main():
                                             batch_size=config['batch_size'], pin_memory=True,
                                             shuffle=False)
 
-    input_shape = (1, 258) if config['hilbert'] else (129, 500)
+    input_shape = (129, 500)
     output_shape = 2 if config['task'] == 'Position_task' else 1 # For position tasks we have two output, but for others only one
     
     if config['architecture'] == 'Xception':
