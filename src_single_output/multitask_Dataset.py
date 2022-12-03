@@ -47,9 +47,9 @@ class Dataset(torch.utils.data.Dataset):
         max_ids = 0
         whole_eeg = []
         whole_LR_label = []
-        Angle_label = []
-        Amp_label = []
-        Pos_label = []
+        whole_Angle_label = []
+        whole_Amp_label = []
+        whole_Pos_label = []
         whole_IsGenerated = []
         whole_ids = []
         for i in len(data_path):
@@ -61,9 +61,9 @@ class Dataset(torch.utils.data.Dataset):
             
             whole_eeg.append(eeg)
             whole_LR_label.append(whole_data['LR'].item()['label'])
-            Angle_label.append(whole_data['Angle'].item()['label'])
-            Amp_label.append(['Amplitude'].item()['label'])
-            Pos_label.append(whole_data['Position'].item()['label'])
+            whole_Angle_label.append(whole_data['Angle'].item()['label'])
+            whole_Amp_label.append(whole_data['Amplitude'].item()['label'])
+            whole_Pos_label.append(whole_data['Position'].item()['label'])
 
             IsGenerated = np.array([whole_data['LR'].item()['IsGenerated'], whole_data['Angle'].item()['IsGenerated'],
             whole_data['Amplitude'].item()['IsGenerated'], whole_data['Position'].item()['IsGenerated']])
@@ -73,16 +73,14 @@ class Dataset(torch.utils.data.Dataset):
             max_ids = max(ids)
             whole_ids.append(ids)
 
-            if task == 'Direction_task':
-                if variable == 'Angle':
-                    whole_label = whole_label[:,1]
-                elif variable == 'Amplitude':
-                    whole_label = whole_label[:,0]
-            elif task == 'Position_task':
-                pass
-
         whole_eeg = np.concatenate(whole_eeg, axis=0)
         whole_LR_label = np.concatenate(whole_LR_label, axis=0)
+        whole_Angle_label = np.concatenate(whole_Angle_label, axis=0)
+        whole_Amp_label = np.concatenate(whole_Amp_label, axis=0)
+        whole_Pos_label = np.concatenate(whole_Pos_label, axis=0)
+        whole_IsGenerated = np.concatenate(whole_IsGenerated, axis=0)
+        whole_ids = np.concatenate(whole_ids, axis=0)
+
         # label_min = np.min(whole_label)
         # label_max = np.max(whole_label)
 
@@ -92,24 +90,41 @@ class Dataset(torch.utils.data.Dataset):
 
         # Split the data
         train_idx, val_idx, test_idx = split(
-            ids, train_ratio, val_ratio, test_ratio)
+            whole_ids, train_ratio, val_ratio, test_ratio)
 
         if (partition == "train"):
             EEG = whole_eeg[train_idx]
-            label = whole_label[train_idx]
+            LR_label = whole_LR_label[train_idx]
+            Angle_label = whole_Angle_label[train_idx]
+            Amp_label = whole_Amp_label[train_idx]
+            Pos_label = whole_Pos_label[train_idx]
+            IsGenerated = whole_IsGenerated[train_idx]
+
         elif (partition == "val"):
             EEG = whole_eeg[val_idx]
-            label = whole_label[val_idx]
+            LR_label = whole_LR_label[val_idx]
+            Angle_label = whole_Angle_label[val_idx]
+            Amp_label = whole_Amp_label[val_idx]
+            Pos_label = whole_Pos_label[val_idx]
+            IsGenerated = whole_IsGenerated[val_idx]
         else:
             EEG = whole_eeg[test_idx]
-            label = whole_label[test_idx]
+            LR_label = whole_LR_label[test_idx]
+            Angle_label = whole_Angle_label[test_idx]
+            Amp_label = whole_Amp_label[test_idx]
+            Pos_label = whole_Pos_label[test_idx]
+            IsGenerated = whole_IsGenerated[test_idx]
 
         self.EEG = EEG  # (n,1,258)
         # (n,1) # Left_Right # Angle /Amplitude (n,2) # position (n,2)
-        self.label = label
+        self.LR_label = LR_label
+        self.Angle_label = Angle_label
+        self.Amp_label = Amp_label
+        self.Pos_label = Pos_label
+        self.IsGenerated = IsGenerated
 
         # Making sure that we have the same no. of labels and trials
-        assert len(self.EEG) == len(self.label)
+        assert len(self.EEG) == len(self.IsGenerated)
 
         self.length = len(self.EEG)
 
@@ -121,9 +136,13 @@ class Dataset(torch.utils.data.Dataset):
         raw_eeg = self.EEG[ind]  # (1,258)
 
         raw_eeg = torch.FloatTensor(raw_eeg)  # Convert to tensors
-        labels = torch.tensor(self.label[ind])
+        LR_label = torch.tensor(self.LR_label[ind])
+        Angle_label = torch.tensor(self.Angle_label[ind])
+        Amp_label = torch.tensor(self.Amp_label[ind])
+        Pos_label = torch.tensor(self.Pos_label[ind])
+        IsGenerated = torch.tensor(self.IsGenerated[ind])
 
-        return raw_eeg, labels
+        return raw_eeg, LR_label, Angle_label, Amp_label, Pos_label, IsGenerated
         # raw_egg [500*128]
         # lr, angle, amplitue, position(1,2)
         # IsGenerated [1,4]
