@@ -11,10 +11,6 @@ class CNNBlock(nn.Module):
         self.out_channels = out_channels
         self.kernel_size = kernel_size
 
-        # print("--------------",in_channels)
-        # print("$$$$$$$$$$$$$$",in_channels)
-        # print("--------------",kernel_size)
-        # print("##############",stride_len)
 
         self.shortcut = nn.Sequential(
             nn.ConstantPad1d((max(math.floor(kernel_size/2)-1, 0),
@@ -32,7 +28,7 @@ class CNNBlock(nn.Module):
                         out_channels=self.in_channels, 
                         groups=self.in_channels, 
                         kernel_size=self.kernel_size),
-                        nn.BatchNorm1d(num_features=self.in_channels),
+            nn.BatchNorm1d(num_features=self.in_channels),
             nn.ReLU(),
             nn.ConstantPad1d(padding=(0, 1), value=0),
             nn.MaxPool1d(kernel_size=2, stride=1),            
@@ -61,12 +57,12 @@ class CNNBlock(nn.Module):
                     max(math.floor(kernel_size/2), 0)), value=0),
             nn.Conv1d(in_channels=self.in_channels, 
                         out_channels=self.in_channels, 
-                        groups=self.in_channels,
+                        groups=self.in_channels, 
                         kernel_size=self.kernel_size),
-                        nn.BatchNorm1d(num_features=self.in_channels),
+            nn.BatchNorm1d(num_features=self.in_channels),
             nn.ReLU(),
             nn.ConstantPad1d(padding=(0, 1), value=0),
-            nn.MaxPool1d(kernel_size=2, stride=1),
+            nn.MaxPool1d(kernel_size=2, stride=1),            
 
 
 
@@ -79,8 +75,9 @@ class CNNBlock(nn.Module):
             nn.BatchNorm1d(num_features=self.in_channels),
             nn.ReLU(),
             nn.ConstantPad1d(padding=(0, 1), value=0),
-            nn.MaxPool1d(kernel_size=2, stride=1),
-        )
+            nn.MaxPool1d(kernel_size=2, stride=1), 
+
+        ) 
 
 
 
@@ -95,9 +92,6 @@ class CNNBlock(nn.Module):
             nn.ReLU(),
             nn.ConstantPad1d(padding=(0, 1), value=0),
             nn.MaxPool1d(kernel_size=2, stride=1) ,            
-
-
-
 
             nn.ConstantPad1d((max(math.floor(kernel_size/2)-1, 0),
                              max(math.floor(kernel_size/2), 0)), value=0),
@@ -194,19 +188,14 @@ class CNNBlock(nn.Module):
 
     def forward(self, input):
         shortcut = self.shortcut(input)
-        tmp = self.activation(self.conv1(input))
-        # print(tmp.shape)
+        tmp = self.activation(self.conv1(input)) # Shape multitask tmp: (16,129,500)
         tmp = self.activation(self.conv2(tmp))
-        # print(tmp.shape)
         tmp = self.activation(self.conv3(tmp))
-        # print(tmp.shape)
         tmp = self.activation(self.conv4(tmp))
         tmp = self.activation(self.conv5(tmp))
         tmp = self.activation(self.conv6(tmp))  
-        # print("final tmp", tmp.shape)
-        # print("shortcut",shortcut.shape)
         output = self.activation(tmp+shortcut)
-        return output    
+        return output     
 
 
 # Creating a CNN class
@@ -250,10 +239,15 @@ class CNN(nn.Module):
         modules = []
         for d in range(self.depth):
             if d == 0:
-                modules.append(CNNBlock(in_channels=self.in_channels, out_channels=self.nb_filters, kernel_size=self.kernel_size, stride_len=self.stride))
+                modules.append(CNNBlock(in_channels=self.in_channels, 
+                                        out_channels=self.nb_filters, 
+                                        kernel_size=self.kernel_size, 
+                                        stride_len=self.stride))
             else:
-                modules.append(CNNBlock(in_channels=self.nb_filters, out_channels=self.nb_filters, kernel_size=self.kernel_size, stride_len=self.stride))
-        
+                modules.append(CNNBlock(in_channels=self.nb_filters, 
+                                        out_channels=self.nb_filters, 
+                                        kernel_size=self.kernel_size, 
+                                        stride_len=self.stride))
         self.Cnnblock = nn.Sequential(*modules)
 
 
@@ -262,6 +256,7 @@ class CNN(nn.Module):
         tmp = self.Cnnblock(x)
         tmp = self.gap_layer_pad(tmp)
         tmp = self.gap_layer(tmp)
+ 
         tmp = tmp.view(tmp.size(0), -1)  # flatten
         
         out_LR = self.output_layer_LR(tmp) # This is the output for L/R task

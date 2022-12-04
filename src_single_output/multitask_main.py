@@ -8,6 +8,7 @@ from torchsummary import summary
 
 from models.MyXception import Xception
 from models.MyPyramidalCNN import PyramidalCNN
+# from models.MyCNN import CNN
 from models.multitask_CNN import CNN
 from multitask_Dataset import Dataset
 from multitask_Train import train, eval, test, get_output, angle_loss
@@ -19,7 +20,7 @@ print(device)
 
 config = {
     'epochs': 50,
-    'batch_size' : 64,
+    'batch_size' : 16,
     'learning_rate' : 0.0001,
     'architecture' : 'CNN', # change the model here
     # 'task' : 'Direction_task', # 'LR_task'/'Direction_task'/'Position_task' change it here
@@ -32,11 +33,17 @@ config = {
     # 'test_ratio' : 0.15
     
 }
+weight_LR = [0.25, 0.25]
+weight_angle = [0.25, 0.25]
+weight_amp = [0.25, 0.25]
+weight_pos = [0.25, 0.25]
+
+weights =[weight_LR,weight_angle,weight_amp,weight_pos] # 4*2 the first value for the generated data, the second value for the original data
 
 # TODO: import as list for datapath
-train_datapath = "./data/Generated_train.npz"
-val_datapath = "./data/Generated_val.npz"
-test_datapath = "./data/Generated_test.npz"
+train_datapath = "../data/Generated_train.npz"
+val_datapath = "../data/Generated_val.npz"
+test_datapath = "../data/Generated_test.npz"
 
 torch.cuda.empty_cache()
 
@@ -58,13 +65,13 @@ test_loader = torch.utils.data.DataLoader(test_data, num_workers=2,
                                         shuffle=False)
 
 raw_eeg, LR_label, Angle_label, Amp_label, Pos_label, IsGenerated = next(iter(train_loader))
-print(raw_eeg.shape)
-print(LR_label)
-print(Angle_label)
-print(Amp_label)
-print(Pos_label)
-print(IsGenerated)
-
+# print(raw_eeg.shape)
+# print(LR_label)
+# print(Angle_label)
+# print(Amp_label)
+# print(Pos_label)
+# print(IsGenerated)
+print("DATASET COMPLETED!!!!!!!")
 input_shape = (129, 500)
 
 output_LR = 1
@@ -77,15 +84,17 @@ if config['architecture'] == 'Xception':
 
 elif config['architecture'] == 'CNN':
     model = CNN(input_shape, output_LR, output_Angle, output_Amp, output_Pos, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
+    #  model = CNN(input_shape, 1, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
+        
 
 elif config['architecture'] == 'PyramidalCNN':
     model = PyramidalCNN(input_shape, output_shape, kernel_size=16, nb_filters=64, depth=6, batch_size=config['batch_size'])
 
 
-
+print("input_shape", input_shape)
 
 model = model.to(device)
-summary(model,input_shape)
+summary(model,raw_eeg)
 
 # criterion = nn.BCEWithLogitsLoss() if config['task']=='LR_task' else nn.MSELoss()
 # if config['variable'] == 'Angle' and config['task']=='Direction_task':
@@ -100,8 +109,8 @@ criterion = [lr_criterion, angle_criterion, amplitude_criterion, abs_pos_coriter
 optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate']) #Defining Optimizer
 # TODO: may change the scheduler later
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, min_lr=0.0001, verbose=True)
-if config['task']=='LR_task':
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=5, min_lr=0.0001, verbose=True)
+# if config['task']=='LR_task':
+#     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=5, min_lr=0.0001, verbose=True)
 scaler = torch.cuda.amp.GradScaler()
 
 # TODO: may add wandb part later once after there is no bug in the code
@@ -116,7 +125,6 @@ best_val_meansure = 0.0
 patience_count = 0 
 patience_max = 20 # TODO: initialized based on paper
 
-weights =[[0.25, 0.25],[0.25, 0.25],[0.25, 0.25],[0.25, 0.25]] # 4*2 the first value for the generated data, the second value for the original data
 
 for epoch in range(config['epochs']):
     print("\nEpoch {}/{}".format(epoch+1, epochs))

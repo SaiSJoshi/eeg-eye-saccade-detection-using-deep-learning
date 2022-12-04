@@ -89,9 +89,9 @@ def train(model, optimizer, criterion, scaler, dataloader, weights):
 
             # Loss Calculation
             loss_LR = criterion[0](out_lr, LR_label) 
-            loss_angle = criterion[1](out_lr, Angle_label)
-            loss_amp = criterion[2](out_lr, Amp_label)
-            loss_abs_pos = criterion[3](out_lr, Pos_label)
+            loss_angle = criterion[1](out_angle, Angle_label)
+            loss_amp = criterion[2](out_amp, Amp_label)
+            loss_abs_pos = criterion[3](out_abs_pos, Pos_label)
 
             # TODO: change dataloader to return all 4 labels
             print(IsGenerated)
@@ -99,7 +99,13 @@ def train(model, optimizer, criterion, scaler, dataloader, weights):
             print(loss_angle.shape)
             print(loss_amp.shape)
             print(loss_abs_pos.shape)
-            
+            weight_LR = IsGenerated[:,0]
+            weight_angle = IsGenerated[:,1]
+            weight_amp = IsGenerated[:,2]
+            weight_pos = IsGenerated[:,3]
+
+            weight_LR[np.which(weight_LR == True)] = weights[0][0]
+            weight_LR[np.which]
             loss = torch.mean(weight_LR * loss_LR + weight_angle * loss_angle + weight_amp * loss_amp + weight_pos * loss_abs_pos)
 
             
