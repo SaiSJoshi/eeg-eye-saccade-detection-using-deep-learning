@@ -8,7 +8,7 @@ from torchsummary import summary
 
 from models.MyXception import Xception
 from models.MyPyramidalCNN import PyramidalCNN
-from models.MyCNN import CNN
+from models.multitask_CNN import CNN
 from multitask_Dataset import Dataset
 from multitask_Train import train, eval, test, get_output, angle_loss
 from models.NewCNN import NewCNN
@@ -38,6 +38,8 @@ train_datapath = "./data/Generated_train.npz"
 val_datapath = "./data/Generated_val.npz"
 test_datapath = "./data/Generated_test.npz"
 
+torch.cuda.empty_cache()
+
 train_data = Dataset(train_datapath)
 val_data = Dataset(train_datapath)
 test_data = Dataset(train_datapath)
@@ -64,20 +66,22 @@ print(Pos_label)
 print(IsGenerated)
 
 input_shape = (129, 500)
-output_shape = 2 if config['task'] == 'Position_task' else 1 # For position tasks we have two output, but for others only one
+
+output_LR = 1
+output_Angle = 1
+output_Amp = 1
+output_Pos = 2
 
 if config['architecture'] == 'Xception':
     model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
 
 elif config['architecture'] == 'CNN':
-    model = CNN(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
+    model = CNN(input_shape, output_LR, output_Angle, output_Amp, output_Pos, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
 
 elif config['architecture'] == 'PyramidalCNN':
     model = PyramidalCNN(input_shape, output_shape, kernel_size=16, nb_filters=64, depth=6, batch_size=config['batch_size'])
 
-elif config['architecture'] == 'NewCNN':
-    model = CNN(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
-    
+
 
 
 model = model.to(device)
@@ -88,10 +92,10 @@ summary(model,input_shape)
 #     criterion = angle_loss
 
 # Losses
-lr_criterion = nn.BCEWithLogitsLoss()
+lr_criterion = nn.BCEWithLogitsLoss(reduce = False)
 angle_criterion = angle_loss
-amplitude_criterion = nn.MSELoss()
-abs_pos_coriterion = nn.MSELoss()
+amplitude_criterion = nn.MSELoss(reduce = False)
+abs_pos_coriterion = nn.MSELoss(reduce = False)
 criterion = [lr_criterion, angle_criterion, amplitude_criterion, abs_pos_coriterion]
 optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate']) #Defining Optimizer
 # TODO: may change the scheduler later
@@ -111,10 +115,13 @@ best_acc = 0.0 # Monitor best accuracy in your run
 best_val_meansure = 0.0
 patience_count = 0 
 patience_max = 20 # TODO: initialized based on paper
+
+weights =[[0.25, 0.25],[0.25, 0.25],[0.25, 0.25],[0.25, 0.25]] # 4*2 the first value for the generated data, the second value for the original data
+
 for epoch in range(config['epochs']):
     print("\nEpoch {}/{}".format(epoch+1, epochs))
 
-    train_loss, train_pred, train_true = train(model, optimizer, criterion, scaler, train_loader)
+    train_loss, train_pred, train_true = train(model, optimizer, criterion, scaler, train_loader, weights)
     print("\tTrain Loss: {:.4f}".format(train_loss))
     print("\tTrain:")
     train_measure, train_pred = get_output(train_pred, train_true, config['task'],config['variable'])

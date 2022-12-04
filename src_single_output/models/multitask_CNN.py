@@ -213,11 +213,16 @@ class CNNBlock(nn.Module):
 class CNN(nn.Module):
     
 	#  Determine what layers and their order in CNN object 
-    def __init__(self, input_shape, output_shape, kernel_size=64, nb_filters=16, depth=6, batch_size=64, stride=1):
+    def __init__(self, input_shape, output_LR, output_Angle, output_Amp, output_Pos, kernel_size=64, nb_filters=16, depth=6, batch_size=64, stride=1):
         super().__init__()
         self.timesamples = input_shape[1]
         self.in_channels = input_shape[0]
-        self.output_shape = output_shape
+
+        self.output_LR = output_LR
+        self.output_Angle = output_Angle
+        self.output_Amp = output_Amp
+        self.output_Pos = output_Pos
+
         self.kernel_size = kernel_size
         self.nb_filters = nb_filters
         self.depth = depth
@@ -225,21 +230,21 @@ class CNN(nn.Module):
         self.batch_size = batch_size
         self.gap_layer = nn.MaxPool1d(kernel_size=2, stride=1) # try max pool after every layer
         self.gap_layer_pad = nn.ConstantPad1d(padding=(0, 1), value=0)
-        self.output_layer_1 = nn.Sequential(
+        self.output_layer_LR = nn.Sequential(
             nn.Linear(in_features=self.nb_filters *
-                      self.timesamples, out_features=output_shape)
+                      self.timesamples, out_features=output_LR)
         )
-        self.output_layer_2 = nn.Sequential(
+        self.output_layer_Angle = nn.Sequential(
             nn.Linear(in_features=self.nb_filters *
-                      self.timesamples, out_features=output_shape)
+                      self.timesamples, out_features=output_Angle)
         )
-        self.output_layer_3 = nn.Sequential(
+        self.output_layer_Amp = nn.Sequential(
             nn.Linear(in_features=self.nb_filters *
-                      self.timesamples, out_features=output_shape)
+                      self.timesamples, out_features=output_Amp)
         )
-        self.output_layer_4 = nn.Sequential(
+        self.output_layer_Pos = nn.Sequential(
             nn.Linear(in_features=self.nb_filters *
-                      self.timesamples, out_features=output_shape)
+                      self.timesamples, out_features=output_Pos)
         )
 
         modules = []
@@ -259,14 +264,15 @@ class CNN(nn.Module):
         tmp = self.gap_layer(tmp)
         tmp = tmp.view(tmp.size(0), -1)  # flatten
         
-        output_1 = self.output_layer_1(tmp) # This is the output for L/R task
-        output_2 = self.output_layer_2(tmp) # Output for Angle task
-        output_3 = self.output_layer_3(tmp) # Output for Ampitude task
-        output_4 = self.output_layer_4(tmp)
+        out_LR = self.output_layer_LR(tmp) # This is the output for L/R task
+        out_Angle = self.output_layer_Angle(tmp) # Output for Angle task
+        out_Amp = self.output_layer_Amp(tmp) # Output for Ampitude task
+        out_Pos = self.output_layer_Pos(tmp)
 
         if return_feats:
             return tmp
         else:
-            return output_1, output_2, output_3, output_4
+            return out_LR, out_Angle, out_Amp, out_Pos
+
 
 

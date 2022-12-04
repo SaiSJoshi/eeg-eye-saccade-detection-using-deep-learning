@@ -9,7 +9,7 @@ import numpy as np
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def angle_loss(a, b):
-    return torch.mean(torch.square(torch.abs(torch.atan2(torch.sin(a - b), torch.cos(a - b)))))
+    return torch.square(torch.abs(torch.atan2(torch.sin(a - b), torch.cos(a - b))))
 
 def binary_output(x):
     x = torch.sigmoid(x)
@@ -44,7 +44,7 @@ def get_output(pred, true, task, variable):
         print("\tEuclidean distance: {:.4f}".format(measure))
     return measure, pred
 
-def train(model, optimizer, criterion, scaler, dataloader):
+def train(model, optimizer, criterion, scaler, dataloader, weights):
 
     model.train()
     train_loss = 0.0  # Monitoring Loss
@@ -60,25 +60,48 @@ def train(model, optimizer, criterion, scaler, dataloader):
         
         # Move Data to Device (Ideally GPU)
         raw_eeg = raw_eeg.to(device)
-        labels = labels.to(device)
+        LR_label = LR_label.to(device)
+        Angle_label = Angle_label.to(device)
+        Amp_label = Amp_label.to(device)
+        Pos_label = Pos_label.to(device)
+        IsGenerated = IsGenerated.to(device)
         
-        labels = torch.squeeze(labels)
+        # labels = torch.squeeze(labels)
 
         with torch.cuda.amp.autocast(): # This implements mixed precision. Thats it! 
             # Forward Propagation
             out_lr, out_angle, out_amp, out_abs_pos = model(raw_eeg)
 
-            logits = logits.to(torch.float64) # TODO: add all the labels
-            labels = labels.to(torch.float64)
-            logits = torch.squeeze(logits)
-            # Loss Calculation
-            loss = criterion(logits, labels)
-            lr_loss = lr_criterion(out_lr, y_lr) # TODO: change dataloader to return all 4 labels
-            angle_loss = angle_criterion(out_angle, out_lr)
-            amp_loss = amplitude_criterion()
-            abs_pos_loss = abs_pos_criterion()
+            out_lr = out_lr.to(torch.float64)
+            out_angle = out_angle.to(torch.float64)
+            out_amp = out_amp.to(torch.float64)
+            out_abs_pos = out_abs_pos.to(torch.float64)
 
-            loss = a * lr_loss + b * angle_loss + c * out_amp + d * abs_pos_loss
+            LR_label = LR_label.to(torch.float64)
+            Angle_label = Angle_label.to(torch.float64)
+            Amp_label = Amp_label.to(torch.float64)
+            Pos_label = Pos_label.to(torch.float64)
+
+            out_lr = torch.squeeze(out_lr)
+            out_angle = torch.squeeze(out_angle)
+            out_amp = torch.squeeze(out_amp)
+            out_abs_pos = torch.squeeze(out_abs_pos)
+
+            # Loss Calculation
+            loss_LR = criterion[0](out_lr, LR_label) 
+            loss_angle = criterion[1](out_lr, Angle_label)
+            loss_amp = criterion[2](out_lr, Amp_label)
+            loss_abs_pos = criterion[3](out_lr, Pos_label)
+
+            # TODO: change dataloader to return all 4 labels
+            print(IsGenerated)
+            print(loss_LR.shape)
+            print(loss_angle.shape)
+            print(loss_amp.shape)
+            print(loss_abs_pos.shape)
+            
+            loss = torch.mean(weight_LR * loss_LR + weight_angle * loss_angle + weight_amp * loss_amp + weight_pos * loss_abs_pos)
+
             
             phone_pred_list.extend(logits.cpu().tolist())
             phone_true_list.extend(labels.cpu().tolist())
