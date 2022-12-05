@@ -217,8 +217,10 @@ class CNN(nn.Module):
         super().__init__()
         self.timesamples = input_shape[1]
         self.in_channels = input_shape[0]
+
         self.output_shape = output_shape
         self.kernel_size = kernel_size
+
         self.nb_filters = nb_filters
         self.depth = depth
         self.stride = stride
@@ -234,9 +236,15 @@ class CNN(nn.Module):
         modules = []
         for d in range(self.depth):
             if d == 0:
-                modules.append(CNNBlock(in_channels=self.in_channels, out_channels=self.nb_filters, kernel_size=self.kernel_size, stride_len=self.stride))
+                modules.append(CNNBlock(in_channels=self.in_channels, 
+                                        out_channels=self.nb_filters, 
+                                        kernel_size=self.kernel_size, 
+                                        stride_len=self.stride))
             else:
-                modules.append(CNNBlock(in_channels=self.nb_filters, out_channels=self.nb_filters, kernel_size=self.kernel_size, stride_len=self.stride))
+                modules.append(CNNBlock(in_channels=self.nb_filters, 
+                                        out_channels=self.nb_filters, 
+                                        kernel_size=self.kernel_size, 
+                                        stride_len=self.stride))
         
         self.Cnnblock = nn.Sequential(*modules)
 
