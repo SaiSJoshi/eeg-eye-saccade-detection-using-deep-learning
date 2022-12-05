@@ -49,8 +49,14 @@ def train(model, optimizer, criterion, scaler, dataloader, weights):
     model.train()
     train_loss = 0.0  # Monitoring Loss
 
-    phone_true_list = []
-    phone_pred_list = []
+    lr_true_list = []
+    lr_pred_list = []
+    amp_true_list = []
+    amp_pred_list = []
+    pos_true_list = []
+    pos_pred_list = []
+    angle_true_list = []
+    angle_pred_list = []
 
     # Progress Bar 
     batch_bar = tqdm(total=len(dataloader), dynamic_ncols=True, leave=False, position=0, desc='Train', ncols=5) 
@@ -94,24 +100,45 @@ def train(model, optimizer, criterion, scaler, dataloader, weights):
             loss_abs_pos = criterion[3](out_abs_pos, Pos_label)
 
             # TODO: change dataloader to return all 4 labels
-            print(IsGenerated)
-            print(loss_LR.shape)
-            print(loss_angle.shape)
-            print(loss_amp.shape)
-            print(loss_abs_pos.shape)
-            weight_LR = IsGenerated[:,0]
-            weight_angle = IsGenerated[:,1]
-            weight_amp = IsGenerated[:,2]
-            weight_pos = IsGenerated[:,3]
+            # print(IsGenerated)
+            # print(loss_LR.shape)
+            # print(loss_angle.shape)
+            # print(loss_amp.shape)
+            # print(loss_abs_pos.shape)
 
-            weight_LR[np.which(weight_LR == True)] = weights[0][0]
-            weight_LR[np.which]
-            loss = torch.mean(weight_LR * loss_LR + weight_angle * loss_angle + weight_amp * loss_amp + weight_pos * loss_abs_pos)
+            weight_LR = torch.zeros(len(IsGenerated)).to(device)
+            weight_angle = torch.zeros(len(IsGenerated)).to(device)
+            weight_amp = torch.zeros(len(IsGenerated)).to(device)
+            weight_pos = torch.zeros(len(IsGenerated)).to(device)
 
+            # checking if cuda or not
+            # print(weight_LR.is_cuda)
+            # print(weights[0].is_cuda) 
+
+            weight_LR[torch.where(IsGenerated[:,0] == True)] = weights[0][0]
+            weight_LR[torch.where(IsGenerated[:,0] == False)] = weights[0][1]
+            weight_angle[torch.where(IsGenerated[:,1] == True)] = weights[1][0]
+            weight_angle[torch.where(IsGenerated[:,1] == False)] = weights[1][1]
+            weight_amp[torch.where(IsGenerated[:,2] == True)] = weights[2][0]
+            weight_amp[torch.where(IsGenerated[:,2] == False)] = weights[2][1]
+            weight_pos[torch.where(IsGenerated[:,3] == True)] = weights[3][0]
+            weight_pos[torch.where(IsGenerated[:,3] == False)] = weights[3][1]
             
-            phone_pred_list.extend(logits.cpu().tolist())
-            phone_true_list.extend(labels.cpu().tolist())
-            #-----------------------------------------------------change everything above
+            # print(weight_LR.shape)
+
+
+
+            loss = torch.mean(weight_LR * loss_LR + weight_angle * loss_angle + weight_amp * loss_amp + weight_pos * torch.mean(loss_abs_pos, dim = 1))
+            
+            lr_pred_list.extend(out_lr.cpu().tolist())
+            angle_pred_list.extend(out_angle.cpu().tolist())
+            pos_pred_list.extend(out_abs_pos.cpu().tolist())
+            amp_pred_list.extend(out_amp.cpu().tolist())
+
+            lr_true_list.extend(LR_label.cpu().tolist())
+            angle_true_list.extend(Angle_label.cpu().tolist())
+            amp_true_list.extend(Amp_label.cpu().tolist())
+            pos_true_list.extend(Pos_label.cpu().tolist())
 
         
         # Update no. of correct predictions & loss as we iterate
@@ -135,68 +162,128 @@ def train(model, optimizer, criterion, scaler, dataloader, weights):
 
 
     train_loss /= len(dataloader)
-    return train_loss, phone_pred_list, phone_true_list
+    return train_loss, lr_true_list, lr_pred_list, amp_true_list, amp_pred_list, pos_true_list, pos_pred_list, angle_true_list, angle_pred_list
 
 
 def eval(model, dataloader):
 
     model.eval()  # set model in evaluation mode
 
-    true_list = []
-    pred_list = []
+    lr_true_list = []
+    lr_pred_list = []
+    amp_true_list = []
+    amp_pred_list = []
+    pos_true_list = []
+    pos_pred_list = []
+    angle_true_list = []
+    angle_pred_list = []
 
-    for i, data in enumerate(dataloader):
+    for iter, (raw_eeg, LR_label, Angle_label, Amp_label, Pos_label, IsGenerated) in enumerate(dataloader):
+        
+        # Move Data to Device (Ideally GPU)
+        raw_eeg = raw_eeg.to(device)
+        LR_label = LR_label.to(device)
+        Angle_label = Angle_label.to(device)
+        Amp_label = Amp_label.to(device)
+        Pos_label = Pos_label.to(device)
+        IsGenerated = IsGenerated.to(device)
 
-        raw_eeg, labels = data
-        # Move data to device (ideally GPU)
-        raw_eeg, labels = raw_eeg.to(device), labels.to(device)
+        
 
         with torch.inference_mode():  # makes sure that there are no gradients computed as we are not training the model now
             # Forward Propagation
-            pred_labels = model(raw_eeg)
+            out_lr, out_angle, out_amp, out_abs_pos = model(raw_eeg)
 
+            out_lr = out_lr.to(torch.float64)
+            out_angle = out_angle.to(torch.float64)
+            out_amp = out_amp.to(torch.float64)
+            out_abs_pos = out_abs_pos.to(torch.float64)
 
-        # Store Pred and True Labels
-        pred_list.extend(pred_labels.cpu().tolist())
-        true_list.extend(labels.cpu().tolist())
+            LR_label = LR_label.to(torch.float64)
+            Angle_label = Angle_label.to(torch.float64)
+            Amp_label = Amp_label.to(torch.float64)
+            Pos_label = Pos_label.to(torch.float64)
+
+            out_lr = torch.squeeze(out_lr)
+            out_angle = torch.squeeze(out_angle)
+            out_amp = torch.squeeze(out_amp)
+            out_abs_pos = torch.squeeze(out_abs_pos)
 
         # Do you think we need loss.backward() and optimizer.step() here?
 
-        # del frames, phonemes, logits, loss
-        del raw_eeg, labels, pred_labels
+            lr_pred_list.extend(out_lr.cpu().tolist())
+            angle_pred_list.extend(out_angle.cpu().tolist())
+            pos_pred_list.extend(out_abs_pos.cpu().tolist())
+            amp_pred_list.extend(out_amp.cpu().tolist())
+
+            lr_true_list.extend(LR_label.cpu().tolist())
+            angle_true_list.extend(Angle_label.cpu().tolist())
+            amp_true_list.extend(Amp_label.cpu().tolist())
+            pos_true_list.extend(Pos_label.cpu().tolist())
+
         torch.cuda.empty_cache()
 
     # Calculate Accuracy
     
-    return pred_list, true_list
+    return lr_true_list, lr_pred_list, amp_true_list, amp_pred_list, pos_true_list, pos_pred_list, angle_true_list, angle_pred_list
 
 
-def test(model,test_loader):
+
+def test(model,dataloader):
     model.eval()  # set model in evaluation mode
 
-    true_list = []
-    pred_list = []
+    lr_true_list = []
+    lr_pred_list = []
+    amp_true_list = []
+    amp_pred_list = []
+    pos_true_list = []
+    pos_pred_list = []
+    angle_true_list = []
+    angle_pred_list = []
 
-    for i, data in enumerate(test_loader):
-
-        raw_eeg, labels = data
-        # Move data to device (ideally GPU)
-        raw_eeg, labels = raw_eeg.to(device), labels.to(device)
+    for iter, (raw_eeg, LR_label, Angle_label, Amp_label, Pos_label, IsGenerated) in enumerate(dataloader):
+        
+        # Move Data to Device (Ideally GPU)
+        raw_eeg = raw_eeg.to(device)
+        LR_label = LR_label.to(device)
+        Angle_label = Angle_label.to(device)
+        Amp_label = Amp_label.to(device)
+        Pos_label = Pos_label.to(device)
+        IsGenerated = IsGenerated.to(device)
 
         with torch.inference_mode():  # makes sure that there are no gradients computed as we are not training the model now
             # Forward Propagation
-            pred_labels = model(raw_eeg)
+            out_lr, out_angle, out_amp, out_abs_pos = model(raw_eeg)
 
+            out_lr = out_lr.to(torch.float64)
+            out_angle = out_angle.to(torch.float64)
+            out_amp = out_amp.to(torch.float64)
+            out_abs_pos = out_abs_pos.to(torch.float64)
 
-        # Store Pred and True Labels
-        pred_list.extend(pred_labels.cpu().tolist())
-        true_list.extend(labels.cpu().tolist())
+            LR_label = LR_label.to(torch.float64)
+            Angle_label = Angle_label.to(torch.float64)
+            Amp_label = Amp_label.to(torch.float64)
+            Pos_label = Pos_label.to(torch.float64)
+
+            out_lr = torch.squeeze(out_lr)
+            out_angle = torch.squeeze(out_angle)
+            out_amp = torch.squeeze(out_amp)
+            out_abs_pos = torch.squeeze(out_abs_pos)
 
         # Do you think we need loss.backward() and optimizer.step() here?
 
-        # del frames, phonemes, logits, loss
-        del raw_eeg, labels, pred_labels
+            lr_pred_list.extend(out_lr.cpu().tolist())
+            angle_pred_list.extend(out_angle.cpu().tolist())
+            pos_pred_list.extend(out_abs_pos.cpu().tolist())
+            amp_pred_list.extend(out_amp.cpu().tolist())
+
+            lr_true_list.extend(LR_label.cpu().tolist())
+            angle_true_list.extend(Angle_label.cpu().tolist())
+            amp_true_list.extend(Amp_label.cpu().tolist())
+            pos_true_list.extend(Pos_label.cpu().tolist())
+
         torch.cuda.empty_cache()
 
     # Calculate Accuracy
-    return pred_list, true_list
+    
+    return lr_true_list, lr_pred_list, amp_true_list, amp_pred_list, pos_true_list, pos_pred_list, angle_true_list, angle_pred_list

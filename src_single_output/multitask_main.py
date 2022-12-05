@@ -22,16 +22,7 @@ config = {
     'epochs': 50,
     'batch_size' : 16,
     'learning_rate' : 0.0001,
-    'architecture' : 'CNN', # change the model here
-    # 'task' : 'Direction_task', # 'LR_task'/'Direction_task'/'Position_task' change it here
-    # 'variable' : 'Amplitude', # 'LR_task': 'LR'; 'Direction_task': 'Angle'/'Amplitude'; 'Position_task': 'Position'
-    # 'synchronisation' : 'dots_synchronised', #'dots_synchronised',#'processing_speed_synchronised',
-    # 'hilbert' : False, # with (True) or without (False) hilbert transform
-    # 'preprocessing' : 'min', # min/max
-    # 'train_ratio' : 0.7,
-    # 'val_ratio' : 0.15,
-    # 'test_ratio' : 0.15
-    
+    'architecture' : 'CNN', # change the model here 
 }
 weight_LR = [0.25, 0.25]
 weight_angle = [0.25, 0.25]
@@ -39,6 +30,7 @@ weight_amp = [0.25, 0.25]
 weight_pos = [0.25, 0.25]
 
 weights =[weight_LR,weight_angle,weight_amp,weight_pos] # 4*2 the first value for the generated data, the second value for the original data
+
 
 # TODO: import as list for datapath
 train_datapath = "../data/Generated_train.npz"
@@ -64,13 +56,9 @@ test_loader = torch.utils.data.DataLoader(test_data, num_workers=2,
                                         batch_size=config['batch_size'], pin_memory=True,
                                         shuffle=False)
 
+
 raw_eeg, LR_label, Angle_label, Amp_label, Pos_label, IsGenerated = next(iter(train_loader))
-# print(raw_eeg.shape)
-# print(LR_label)
-# print(Angle_label)
-# print(Amp_label)
-# print(Pos_label)
-# print(IsGenerated)
+
 print("DATASET COMPLETED!!!!!!!")
 input_shape = (129, 500)
 
@@ -80,18 +68,17 @@ output_Amp = 1
 output_Pos = 2
 
 if config['architecture'] == 'Xception':
-    model = Xception(input_shape, output_shape, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
+    model = Xception(input_shape, output_LR, output_Angle, output_Amp, output_Pos, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
 
 elif config['architecture'] == 'CNN':
     model = CNN(input_shape, output_LR, output_Angle, output_Amp, output_Pos, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
-    #  model = CNN(input_shape, 1, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
         
 
 elif config['architecture'] == 'PyramidalCNN':
-    model = PyramidalCNN(input_shape, output_shape, kernel_size=16, nb_filters=64, depth=6, batch_size=config['batch_size'])
+    model = PyramidalCNN(input_shape, output_LR, output_Angle, output_Amp, output_Pos, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
 
 
-print("input_shape", input_shape)
+# print("input_shape", input_shape)
 
 model = model.to(device)
 summary(model,raw_eeg)
@@ -129,23 +116,31 @@ patience_max = 20 # TODO: initialized based on paper
 for epoch in range(config['epochs']):
     print("\nEpoch {}/{}".format(epoch+1, epochs))
 
-    train_loss, train_pred, train_true = train(model, optimizer, criterion, scaler, train_loader, weights)
+    train_loss, lr_true_list, lr_pred_list, amp_true_list, amp_pred_list, pos_true_list, pos_pred_list, angle_true_list, angle_pred_list = train(model, optimizer, criterion, scaler, train_loader, weights)
     print("\tTrain Loss: {:.4f}".format(train_loss))
     print("\tTrain:")
-    train_measure, train_pred = get_output(train_pred, train_true, config['task'],config['variable'])
-    val_pred, val_true = eval(model, val_loader)
+
+    train_measure_LR, train_pred_LR = get_output(lr_pred_list, lr_true_list, 'LR_task','LR')
+    train_measure_amp, train_pred_amp = get_output(amp_pred_list, amp_true_list, 'Direction_task','Amplitude')
+    train_measure_angle, train_pred_angle = get_output(angle_pred_list, angle_true_list, 'Direction_task','Angle')
+    train_measure_pos, train_pred_pos = get_output(pos_pred_list, pos_true_list, 'Position_task','Position')
+
+    lr_true_list, lr_pred_list, amp_true_list, amp_pred_list, pos_true_list, pos_pred_list, angle_true_list, angle_pred_list = eval(model, val_loader)
     print("\tValidation:")
-    val_measure, val_pred = get_output(val_pred, val_true, config['task'],config['variable'])
+    val_measure_LR, val_pred_LR = get_output(lr_pred_list, lr_true_list, 'LR_task','LR')
+    val_measure_amp, val_pred_amp = get_output(amp_pred_list, amp_true_list, 'Direction_task','Amplitude')
+    val_measure_angle, val_pred_angle = get_output(angle_pred_list, angle_true_list, 'Direction_task','Angle')
+    val_measure_pos, val_pred_pos = get_output(pos_pred_list, pos_true_list, 'Position_task','Position')
     
     ## Early Stopping condition
-    if abs(val_measure - best_val_meansure) > 0.1:
-        best_val_meansure = val_measure
-    else: 
-        patience_count += 1
+    # if abs(eval_measure_LR - best_val_meansure) > 0.1:
+    #     best_val_meansure = val_measure
+    # else: 
+    #     patience_count += 1
 
-    if patience_count  >= patience_max:
-        print("\nValid Accuracy didn't improve since last {} epochs.", patience_count)
-        break 
+    # if patience_count  >= patience_max:
+    #     print("\nValid Accuracy didn't improve since last {} epochs.", patience_count)
+    #     break 
 
 
 
@@ -158,11 +153,11 @@ for epoch in range(config['epochs']):
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'loss': train_loss,
-        'acc': val_measure}, 
-    '../checkpoints/'+config['architecture']+'_'+config['task']+'_checkpoint.pth')
+        'acc': [val_measure_LR, val_measure_amp, val_measure_angle, val_measure_pos]}, 
+    '../checkpoints/'+config['architecture']+'_'+'multitask'+'_checkpoint.pth')
 
     
-    scheduler.step(val_measure)
+    # scheduler.step(val_measure)
 #     ## Save checkpoint in wandb
     #    wandb.save('checkpoint.pth')
 
@@ -172,10 +167,30 @@ for epoch in range(config['epochs']):
 # ## Finish your wandb run
 # run.finish()
 
-test_pred, test_true = test(model, test_loader)
+lr_true_list, lr_pred_list, amp_true_list, amp_pred_list, pos_true_list, pos_pred_list, angle_true_list, angle_pred_list = test(model, test_loader)
 print("\tTest:")
-test_measure, test_pred = get_output(test_pred, test_true, config['task'],config['variable'])
-results_name = '../results/'+config['architecture']+'_'+config['task']+'_'+config['variable']+".npz"
+test_measure_LR, test_pred_LR = get_output(lr_pred_list, lr_true_list, 'LR_task','LR')
+test_measure_amp, test_pred_amp = get_output(amp_pred_list, amp_true_list, 'Direction_task','Amplitude')
+test_measure_angle, test_pred_angle = get_output(angle_pred_list, angle_true_list, 'Direction_task','Angle')
+test_measure_pos, test_pred_pos = get_output(pos_pred_list, pos_true_list, 'Position_task','Position')
+
+results_name = '../results/'+config['architecture']+'_'+'multitask'+".npz"
 print(results_name)
-np.savez(results_name, pred = test_pred, truth = test_true, measure = test_measure)
+np.savez(results_name, 
+        pred_LR = test_pred_LR, 
+        truth_LR = lr_true_list, 
+        measure_LR = test_measure_LR,
+
+        pred_amp = test_pred_amp, 
+        truth_amp = amp_true_list, 
+        measure_amp = test_measure_amp,
+
+        pred_angle = test_pred_angle, 
+        truth_angle = angle_true_list,
+         measure_angle = test_measure_angle,
+
+         pred_pos = test_pred_pos, 
+         truth_pos = pos_true_list, 
+         measure_pos = test_measure_pos )
+
 
