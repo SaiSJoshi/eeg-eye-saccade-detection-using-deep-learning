@@ -14,28 +14,32 @@ from multitask_Dataset import Dataset
 from multitask_Train import train, eval, test, get_output, angle_loss
 from models.NewCNN import NewCNN
 
+# Import wandb
+import wandb
+wandb.login(key="") # put your keys here
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(device)
 
 
 config = {
-    'epochs': 50,
+    'epochs': 10,
     'batch_size' : 16,
     'learning_rate' : 0.0001,
     'architecture' : 'CNN', # change the model here 
 }
-weight_LR = [0.25, 0.25]
-weight_angle = [0.25, 0.25]
-weight_amp = [0.25, 0.25]
-weight_pos = [0.25, 0.25]
+weight_LR = [0.1, 0.9]
+weight_angle = [0.1, 0.9]
+weight_amp = [0.1, 0.9]
+weight_pos = [0.1, 0.9]
 
 weights =[weight_LR,weight_angle,weight_amp,weight_pos] # 4*2 the first value for the generated data, the second value for the original data
 
 
 # TODO: import as list for datapath
-train_datapath = "../data/Generated_train.npz"
-val_datapath = "../data/Generated_val.npz"
-test_datapath = "../data/Generated_test.npz"
+train_datapath = "./data/Generated_train_1.npz"
+val_datapath = "./data/Generated_val.npz"
+test_datapath = "./data/Generated_test.npz"
 
 torch.cuda.empty_cache()
 
@@ -56,10 +60,14 @@ test_loader = torch.utils.data.DataLoader(test_data, num_workers=2,
                                         batch_size=config['batch_size'], pin_memory=True,
                                         shuffle=False)
 
-
 raw_eeg, LR_label, Angle_label, Amp_label, Pos_label, IsGenerated = next(iter(train_loader))
 
 print("DATASET COMPLETED!!!!!!!")
+
+scaling = train_data.scaling
+weights = weights/np.expand_dims(scaling[:,1] - scaling[:,0],1)
+print(weights)
+
 input_shape = (129, 500)
 
 output_LR = 1
@@ -90,8 +98,10 @@ summary(model,raw_eeg)
 # Losses
 lr_criterion = nn.BCEWithLogitsLoss(reduce = False)
 angle_criterion = angle_loss
-amplitude_criterion = nn.MSELoss(reduce = False)
-abs_pos_coriterion = nn.MSELoss(reduce = False)
+amplitude_criterion = nn.L1Loss(reduce = False)
+abs_pos_coriterion = nn.L1Loss(reduce = False)
+# amplitude_criterion = nn.MSELoss(reduce = False)
+# abs_pos_coriterion = nn.MSELoss(reduce = False)
 criterion = [lr_criterion, angle_criterion, amplitude_criterion, abs_pos_coriterion]
 optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate']) #Defining Optimizer
 # TODO: may change the scheduler later
@@ -101,6 +111,15 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', fa
 scaler = torch.cuda.amp.GradScaler()
 
 # TODO: may add wandb part later once after there is no bug in the code
+run = wandb.init(
+    name = "L1Loss_with_scaling", ## Wandb creates random run names if you skip this field
+    reinit = True, ### Allows reinitalizing runs when you re-run this cell
+    # run_id = ### Insert specific run id here if you want to resume a previous run
+    # resume = "must" ### You need this to resume previous runs, but comment out reinit = True when using this
+    project = "Saccade_detection", ### Project should be created in your wandb account 
+    config = config, ### Wandb Config for your run
+    entity="deeplearningproject11785"
+)
 torch.cuda.empty_cache()
 
 epochs = config['epochs']
@@ -111,6 +130,7 @@ best_acc = 0.0 # Monitor best accuracy in your run
 best_val_meansure = 0.0
 patience_count = 0 
 patience_max = 20 # TODO: initialized based on paper
+
 
 
 for epoch in range(config['epochs']):
@@ -154,18 +174,15 @@ for epoch in range(config['epochs']):
         'optimizer_state_dict': optimizer.state_dict(),
         'loss': train_loss,
         'acc': [val_measure_LR, val_measure_amp, val_measure_angle, val_measure_pos]}, 
-    '../checkpoints/'+config['architecture']+'_'+'multitask'+'_checkpoint.pth')
-
+    './checkpoints/'+config['architecture']+'_'+'multitask'+'_checkpoint.pth')
+    wandb.save(config['architecture']+'_'+'multitask'+'_checkpoint.pth')
     
+    wandb.log({"train_loss":train_loss,
+               'validation_LR': val_measure_LR, "validation_Amp": val_measure_amp,
+               "validation_Angle": val_measure_angle, "Validation_Pos":val_measure_pos})
     # scheduler.step(val_measure)
-#     ## Save checkpoint in wandb
-    #    wandb.save('checkpoint.pth')
-
-#     Is your training time very high? Look into mixed precision training if your GPU (Tesla T4, V100, etc) can make use of it 
-#     Refer - https://pytorch.org/docs/stable/notes/amp_examples.html
-
-# ## Finish your wandb run
-# run.finish()
+    
+run.finish()
 
 lr_true_list, lr_pred_list, amp_true_list, amp_pred_list, pos_true_list, pos_pred_list, angle_true_list, angle_pred_list = test(model, test_loader)
 print("\tTest:")
@@ -174,7 +191,7 @@ test_measure_amp, test_pred_amp = get_output(amp_pred_list, amp_true_list, 'Dire
 test_measure_angle, test_pred_angle = get_output(angle_pred_list, angle_true_list, 'Direction_task','Angle')
 test_measure_pos, test_pred_pos = get_output(pos_pred_list, pos_true_list, 'Position_task','Position')
 
-results_name = '../results/'+config['architecture']+'_'+'multitask'+".npz"
+results_name = './results/'+config['architecture']+'_'+'multitask'+".npz"
 print(results_name)
 np.savez(results_name, 
         pred_LR = test_pred_LR, 
@@ -192,5 +209,3 @@ np.savez(results_name,
          pred_pos = test_pred_pos, 
          truth_pos = pos_true_list, 
          measure_pos = test_measure_pos )
-
-

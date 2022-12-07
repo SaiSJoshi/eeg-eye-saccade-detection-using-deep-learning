@@ -49,6 +49,12 @@ class Dataset(torch.utils.data.Dataset):
         self.Amp_label = whole_data["Amp_label"]
         self.Pos_label = whole_data["Pos_label"]
         self.IsGenerated = whole_data["IsGenerated"]
+
+        range_LR = [np.min(self.LR_label[np.where(self.IsGenerated[:,0] == False)]), np.max(self.LR_label[np.where(self.IsGenerated[:,0] == False)])]
+        range_Angle = [np.min(self.Angle_label[np.where(self.IsGenerated[:,1] == False)]), np.max(self.Angle_label[np.where(self.IsGenerated[:,1] == False)])]
+        range_Amp = [np.min(self.Amp_label[np.where(self.IsGenerated[:,2] == False)]), np.max(self.Amp_label[np.where(self.IsGenerated[:,2] == False)])]
+        range_Pos = [np.min(self.Pos_label[np.where(self.IsGenerated[:,3] == False)]), np.max(self.Pos_label[np.where(self.IsGenerated[:,3] == False)])]
+        self.scaling = np.stack([range_LR, range_Angle, range_Amp, range_Pos], axis = 0)
     
         assert len(self.EEG) == len(self.IsGenerated)
 

@@ -259,10 +259,11 @@ class CNN(nn.Module):
  
         tmp = tmp.view(tmp.size(0), -1)  # flatten
         
-        out_LR = self.output_layer_LR(tmp) # This is the output for L/R task
-        out_Angle = self.output_layer_Angle(tmp) # Output for Angle task
-        out_Amp = self.output_layer_Amp(tmp) # Output for Ampitude task
-        out_Pos = self.output_layer_Pos(tmp)
+        out_LR = torch.nan_to_num(self.output_layer_LR(tmp)) # This is the output for L/R task
+        out_Angle = torch.nan_to_num(self.output_layer_Angle(tmp)) # Output for Angle task
+        out_Amp = torch.nan_to_num(self.output_layer_Amp(tmp)) # Output for Ampitude task
+        out_Pos = torch.nan_to_num(self.output_layer_Pos(tmp))
+        
 
         if return_feats:
             return tmp
