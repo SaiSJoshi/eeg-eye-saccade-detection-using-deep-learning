@@ -6,7 +6,7 @@ import sklearn
 from sklearn.metrics import accuracy_score
 from torchsummary import summary
 
-from models.MyXception import Xception
+from models.multitask_Xception import Xception
 from models.MyPyramidalCNN import PyramidalCNN
 # from models.MyCNN import CNN
 from models.multitask_CNN import CNN
@@ -77,7 +77,7 @@ output_Pos = 2
 
 if config['architecture'] == 'Xception':
     model = Xception(input_shape, output_LR, output_Angle, output_Amp, output_Pos, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
-
+        
 elif config['architecture'] == 'CNN':
     model = CNN(input_shape, output_LR, output_Angle, output_Amp, output_Pos, kernel_size=40, nb_filters=64, depth=6, batch_size=config['batch_size'])
         
