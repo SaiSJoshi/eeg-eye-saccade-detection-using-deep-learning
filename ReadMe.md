@@ -1,4 +1,5 @@
-[Click here for video explaination of the project](https://www.youtube.com/watch?v=9XUe3tMpjh0)
+[Video Presentation](https://www.youtube.com/watch?v=9XUe3tMpjh0)
+[Report Link](https://ia904708.us.archive.org/13/items/project-report_202301/Project_Report.pdf)
 </br>
 </br>
 
